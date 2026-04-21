@@ -7,22 +7,75 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>
-      <h1 data-i18n="title">이벤트 CRM MVP</h1>
-      <p data-i18n="subtitle">새 행사 생성 → 구글시트 연결 → 자동응답/상담 진행</p>
-      <label style="display:inline-grid;gap:4px;margin-top:8px;">
-        <span data-i18n="language">언어</span>
-        <select id="ui-language">
-          <option value="ko">한국어</option>
-          <option value="en">English</option>
-          <option value="ru">Русский</option>
-        </select>
-      </label>
-    </header>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <h1 data-i18n="title">이벤트 CRM MVP</h1>
+          <p data-i18n="subtitle">새 행사 생성 → 구글시트 연결 → 자동응답/상담 진행</p>
+        </div>
+        <nav class="menu">
+          <button class="menu-btn active" data-view="dashboard-view">
+            <i data-lucide="layout-dashboard"></i>
+            <span>1. 대시보드</span>
+          </button>
+          <button class="menu-btn" data-view="crm-view">
+            <i data-lucide="workflow"></i>
+            <span>2. CRM 기능구현페이지 연결</span>
+          </button>
+          <button class="menu-btn" data-view="stats-view">
+            <i data-lucide="chart-column-big"></i>
+            <span>3. 통계화면</span>
+          </button>
+          <button class="menu-btn" data-view="config-view">
+            <i data-lucide="settings"></i>
+            <span>4. 문의관리</span>
+          </button>
+          <button class="menu-btn" data-view="system-config-view">
+            <i data-lucide="sliders-horizontal"></i>
+            <span>5. System Config</span>
+          </button>
+        </nav>
+        <label class="language-box">
+          <span data-i18n="language">언어</span>
+          <select id="ui-language">
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+          </select>
+        </label>
+      </aside>
 
-    <main>
-      <section class="panel">
-        <h2>1) 새로운 행사 입력</h2>
+      <main>
+        <section id="dashboard-view" class="view active">
+          <section class="panel">
+            <h2>1. 대시보드</h2>
+            <p class="hero-copy">Event CRM 홈에서 행사 생성, CRM 운영, 통계, Config를 한 번에 관리하세요.</p>
+            <div id="event-meta" class="meta"></div>
+            <div class="actions">
+              <button class="menu-btn quick-nav" data-view="crm-view">CRM 바로가기</button>
+              <button class="menu-btn quick-nav" data-view="stats-view">통계 바로가기</button>
+              <button class="menu-btn quick-nav" data-view="config-view">문의관리 바로가기</button>
+            </div>
+            <div class="dashboard-cards">
+              <article class="stat-card">
+                <h3>행사 수</h3>
+                <strong id="dashboard-events-count">0</strong>
+              </article>
+              <article class="stat-card">
+                <h3>리드 수</h3>
+                <strong id="dashboard-leads-count">0</strong>
+              </article>
+              <article class="stat-card">
+                <h3>상담 진행중</h3>
+                <strong id="dashboard-consulting-count">0</strong>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section id="crm-view" class="view">
+          <section class="panel">
+            <h2>2) 새로운 행사 입력</h2>
         <form id="event-form">
           <label>행사명
             <input id="event-name" required placeholder="예: 카자흐스탄 4월 검진 이벤트" />
@@ -39,10 +92,10 @@
           </label>
           <button type="submit" data-i18n="save_event">행사 저장</button>
         </form>
-      </section>
+          </section>
 
-      <section class="panel">
-        <h2>2) 구글시트 주소 입력</h2>
+          <section class="panel">
+            <h2>3) 구글시트 주소 입력</h2>
         <form id="sheet-form">
           <label>행사 선택
             <select id="event-select"></select>
@@ -55,39 +108,10 @@
           </label>
           <button type="submit" data-i18n="connect_sheet">시트 연결</button>
         </form>
-      </section>
+          </section>
 
-      <section class="panel">
-        <h2 data-i18n="config_menu">Config 메뉴 (행사별 답변/상태 규칙)</h2>
-        <form id="config-form">
-          <label>행사 선택
-            <select id="config-event-select"></select>
-          </label>
-          <label>답변 템플릿(한국어)
-            <textarea id="tpl-ko" rows="2"></textarea>
-          </label>
-          <label>Answer Template (English)
-            <textarea id="tpl-en" rows="2"></textarea>
-          </label>
-          <label>Шаблон ответа (Русский)
-            <textarea id="tpl-ru" rows="2"></textarea>
-          </label>
-          <label>created 상태값
-            <input id="cfg-created-status" placeholder="CREATED" />
-          </label>
-          <label>consulting 상태값(쉼표구분)
-            <input id="cfg-consulting-values" placeholder="IN_PROGRESS,상담 중" />
-          </label>
-          <label>전화번호 prefix 제거값
-            <input id="cfg-phone-prefix" placeholder="p:" />
-          </label>
-          <button type="submit" data-i18n="save_config">Config 저장</button>
-        </form>
-      </section>
-
-      <section class="panel">
-        <h2>3) 진행상황 운영 (자동응답 + 문의응답선택)</h2>
-        <div id="event-meta" class="meta"></div>
+          <section class="panel">
+            <h2>4) 진행상황 운영 (자동응답 + 문의응답선택)</h2>
         <div class="actions">
           <button id="simulate-lead-btn" data-i18n="simulate_lead">테스트 리드 유입</button>
           <button id="run-auto-reply-btn" data-i18n="run_auto_reply">자동응답 실행</button>
@@ -117,8 +141,58 @@
           </form>
         </details>
         <div id="lead-list"></div>
-      </section>
-    </main>
+          </section>
+        </section>
+
+        <section id="stats-view" class="view">
+          <section class="panel">
+            <h2>3. 통계화면</h2>
+            <p class="meta">행사/리드 데이터를 기준으로 요약 통계를 확인합니다.</p>
+            <ul id="stats-summary"></ul>
+          </section>
+        </section>
+
+        <section id="config-view" class="view">
+          <section class="panel">
+            <h2>4. 문의관리 (행사별 FAQ 답변)</h2>
+            <form id="inquiry-form">
+              <label>행사 선택
+                <select id="inquiry-event-select"></select>
+              </label>
+              <label>FAQ 제목
+                <input id="faq-title" placeholder="예: 검진 안내" />
+              </label>
+              <label>FAQ 메시지
+                <textarea id="faq-message" rows="3" placeholder="왓츠앱으로 보낼 예시 답변을 입력하세요."></textarea>
+              </label>
+              <button type="submit">FAQ 추가</button>
+            </form>
+            <ul id="faq-list" class="faq-list"></ul>
+          </section>
+        </section>
+
+        <section id="system-config-view" class="view">
+          <section class="panel">
+            <h2 data-i18n="config_menu">5. System Config (상태/규칙)</h2>
+            <form id="config-form">
+              <label>행사 선택
+                <select id="config-event-select"></select>
+              </label>
+              <label>created 상태값
+                <input id="cfg-created-status" placeholder="CREATED" />
+              </label>
+              <label>consulting 상태값(쉼표구분)
+                <input id="cfg-consulting-values" placeholder="IN_PROGRESS,상담 중" />
+              </label>
+              <label>전화번호 prefix 제거값
+                <input id="cfg-phone-prefix" placeholder="p:" />
+              </label>
+              <button type="submit" data-i18n="save_config">Config 저장</button>
+            </form>
+          </section>
+        </section>
+      </main>
+    </div>
 
     <template id="lead-template">
       <article class="lead-card">
@@ -144,10 +218,17 @@
             <option value="recontact_needed">재접촉 필요</option>
           </select>
         </label>
+        <div class="whatsapp-box">
+          <label>FAQ 선택
+            <select class="faq-select"></select>
+          </label>
+          <button class="send-whatsapp-btn" type="button">왓츠앱 전송</button>
+        </div>
         <div class="log"></div>
       </article>
     </template>
 
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
   </body>
 </html>
