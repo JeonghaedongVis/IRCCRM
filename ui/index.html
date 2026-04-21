@@ -22,17 +22,21 @@
             <i data-lucide="workflow"></i>
             <span>2. CRM 기능구현페이지 연결</span>
           </button>
+          <button class="menu-btn" data-view="patient-view">
+            <i data-lucide="users"></i>
+            <span>3. 환자 인입 현황</span>
+          </button>
           <button class="menu-btn" data-view="stats-view">
             <i data-lucide="chart-column-big"></i>
-            <span>3. 통계화면</span>
+            <span>4. 통계화면</span>
           </button>
           <button class="menu-btn" data-view="config-view">
             <i data-lucide="settings"></i>
-            <span>4. 문의관리</span>
+            <span>5. 문의관리</span>
           </button>
           <button class="menu-btn" data-view="system-config-view">
             <i data-lucide="sliders-horizontal"></i>
-            <span>5. System Config</span>
+            <span>6. System Config</span>
           </button>
         </nav>
         <label class="language-box">
@@ -53,6 +57,7 @@
             <div id="event-meta" class="meta"></div>
             <div class="actions">
               <button class="menu-btn quick-nav" data-view="crm-view">CRM 바로가기</button>
+              <button class="menu-btn quick-nav" data-view="patient-view">환자현황 바로가기</button>
               <button class="menu-btn quick-nav" data-view="stats-view">통계 바로가기</button>
               <button class="menu-btn quick-nav" data-view="config-view">문의관리 바로가기</button>
             </div>
@@ -110,37 +115,40 @@
         </form>
           </section>
 
+        </section>
+
+        <section id="patient-view" class="view">
           <section class="panel">
-            <h2>4) 진행상황 운영 (자동응답 + 문의응답선택)</h2>
-        <div class="actions">
-          <button id="simulate-lead-btn" data-i18n="simulate_lead">테스트 리드 유입</button>
-          <button id="run-auto-reply-btn" data-i18n="run_auto_reply">자동응답 실행</button>
-        </div>
-        <details>
-          <summary><strong>Instagram New 시트 행 인입(실데이터 형태)</strong></summary>
-          <form id="instagram-ingest-form">
-            <label>created_time
-              <input id="ig-created-time" placeholder="2026-04-01T20:54:53+05:00" />
-            </label>
-            <label>platform
-              <input id="ig-platform" placeholder="ig / fb / M1" />
-            </label>
-            <label>phone_number
-              <input id="ig-phone" placeholder="p:+77475789240" />
-            </label>
-            <label>full_name
-              <input id="ig-full-name" placeholder="환자 이름" />
-            </label>
-            <label>lead_status
-              <input id="ig-lead-status" placeholder="CREATED" />
-            </label>
+            <h2>3) 환자 인입 현황</h2>
             <div class="actions">
-              <button type="submit">Instagram New 형식으로 인입</button>
-              <button id="append-sheet-row-btn" type="button">신규행 추가 + CRM 인입</button>
+              <button id="simulate-lead-btn" data-i18n="simulate_lead">테스트 리드 유입</button>
+              <button id="run-auto-reply-btn" data-i18n="run_auto_reply">자동응답 실행</button>
             </div>
-          </form>
-        </details>
-        <div id="lead-list"></div>
+            <details>
+              <summary><strong>Instagram New 시트 행 인입(실데이터 형태)</strong></summary>
+              <form id="instagram-ingest-form">
+                <label>created_time
+                  <input id="ig-created-time" placeholder="2026-04-01T20:54:53+05:00" />
+                </label>
+                <label>platform
+                  <input id="ig-platform" placeholder="ig / fb / M1" />
+                </label>
+                <label>phone_number
+                  <input id="ig-phone" placeholder="p:+77475789240" />
+                </label>
+                <label>full_name
+                  <input id="ig-full-name" placeholder="환자 이름" />
+                </label>
+                <label>lead_status
+                  <input id="ig-lead-status" placeholder="CREATED" />
+                </label>
+                <div class="actions">
+                  <button type="submit">Instagram New 형식으로 인입</button>
+                  <button id="append-sheet-row-btn" type="button">신규행 추가 + CRM 인입</button>
+                </div>
+              </form>
+            </details>
+            <div id="lead-list"></div>
           </section>
         </section>
 
@@ -167,6 +175,7 @@
               </label>
               <button type="submit">FAQ 추가</button>
             </form>
+            <p class="meta">FAQ는 행사별 최대 6개까지 생성됩니다.</p>
             <ul id="faq-list" class="faq-list"></ul>
           </section>
         </section>
@@ -201,12 +210,6 @@
           <span class="lead-stage"></span>
         </header>
         <p class="lead-meta"></p>
-        <div class="quick-buttons">
-          <button data-action="btn_checkup_info">검진 안내 보내기</button>
-          <button data-action="btn_price_info">가격 안내 보내기</button>
-          <button data-action="btn_booking_push">예약 유도 메시지</button>
-          <button data-action="btn_reengage">재문의 유도</button>
-        </div>
         <label>상태
           <select class="stage-select">
             <option value="new_lead">신규 리드</option>
@@ -218,11 +221,9 @@
             <option value="recontact_needed">재접촉 필요</option>
           </select>
         </label>
+        <div class="faq-buttons"></div>
         <div class="whatsapp-box">
-          <label>FAQ 선택
-            <select class="faq-select"></select>
-          </label>
-          <button class="send-whatsapp-btn" type="button">왓츠앱 전송</button>
+          <small>FAQ 버튼 클릭 시 왓츠앱 메시지가 즉시 발송됩니다.</small>
         </div>
         <div class="log"></div>
       </article>

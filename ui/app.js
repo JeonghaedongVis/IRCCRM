@@ -141,7 +141,7 @@ function loadConfigForm(ev) {
 }
 
 function eventFaqs(ev) {
-  return ev?.config?.faqTemplates || [];
+  return (ev?.config?.faqTemplates || []).slice(0, 6);
 }
 
 function loadInquiryForm(ev) {
@@ -206,10 +206,15 @@ function renderLeads() {
     node.querySelector(".lead-meta").textContent = `관심진료: ${lead.service} · 유입시각: ${lead.createdAt}`;
     node.querySelector(".stage-select").value = lead.stage;
     node.querySelector(".log").textContent = lead.log || "로그 없음";
-    const faqSelect = node.querySelector(".faq-select");
-    faqSelect.innerHTML = eventFaqs(ev)
-      .map((faq, index) => `<option value="${index}">${faq.title}</option>`)
-      .join("");
+    const faqButtons = node.querySelector(".faq-buttons");
+    const faqs = eventFaqs(ev);
+    if (faqs.length === 0) {
+      faqButtons.innerHTML = "<p>문의관리 탭에서 FAQ를 먼저 등록하세요.</p>";
+    } else {
+      faqButtons.innerHTML = faqs
+        .map((faq, index) => `<button type="button" class="faq-action-btn" data-faq-index="${index}">${faq.title}</button>`)
+        .join("");
+    }
 
     node.querySelector(".stage-select").addEventListener("change", async (e) => {
       await api(`/api/leads/${lead.id}/stage`, {
@@ -219,11 +224,13 @@ function renderLeads() {
       await loadLeads();
     });
 
-    node.querySelectorAll(".quick-buttons button").forEach((btn) => {
+    node.querySelectorAll(".faq-action-btn").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        await api(`/api/leads/${lead.id}/quick-action`, {
+        const faq = faqs[Number(btn.dataset.faqIndex)];
+        if (!faq) return alert("FAQ를 찾을 수 없습니다.");
+        await api(`/api/leads/${lead.id}/send-whatsapp`, {
           method: "POST",
-          body: JSON.stringify({ action: btn.dataset.action }),
+          body: JSON.stringify({ message: faq.message, title: faq.title }),
         });
         await loadLeads();
       });
@@ -324,6 +331,7 @@ inquiryForm.addEventListener("submit", async (e) => {
   const title = document.getElementById("faq-title").value.trim();
   const message = document.getElementById("faq-message").value.trim();
   if (!title || !message) return alert("FAQ 제목/메시지를 입력하세요.");
+  if (eventFaqs(ev).length >= 6) return alert("FAQ는 행사별 최대 6개까지 등록할 수 있습니다.");
   const faqTemplates = [...eventFaqs(ev), { title, message }];
   await api(`/api/events/${eventId}/config`, {
     method: "POST",
@@ -396,8 +404,10 @@ appendSheetRowBtn.addEventListener("click", async () => {
 
 eventSelect.addEventListener("change", async () => {
   configEventSelect.value = eventSelect.value;
+  inquiryEventSelect.value = eventSelect.value;
   refreshMeta();
   loadConfigForm(selectedEvent());
+  loadInquiryForm(selectedEvent());
   await loadLeads();
 });
 
