@@ -28,7 +28,11 @@
           </button>
           <button class="menu-btn" data-view="config-view">
             <i data-lucide="settings"></i>
-            <span>4. Config</span>
+            <span>4. 문의관리</span>
+          </button>
+          <button class="menu-btn" data-view="system-config-view">
+            <i data-lucide="sliders-horizontal"></i>
+            <span>5. System Config</span>
           </button>
         </nav>
         <label class="language-box">
@@ -50,7 +54,7 @@
             <div class="actions">
               <button class="menu-btn quick-nav" data-view="crm-view">CRM 바로가기</button>
               <button class="menu-btn quick-nav" data-view="stats-view">통계 바로가기</button>
-              <button class="menu-btn quick-nav" data-view="config-view">Config 바로가기</button>
+              <button class="menu-btn quick-nav" data-view="config-view">문의관리 바로가기</button>
             </div>
             <div class="dashboard-cards">
               <article class="stat-card">
@@ -150,19 +154,29 @@
 
         <section id="config-view" class="view">
           <section class="panel">
-            <h2 data-i18n="config_menu">Config 메뉴 (행사별 답변/상태 규칙)</h2>
+            <h2>4. 문의관리 (행사별 FAQ 답변)</h2>
+            <form id="inquiry-form">
+              <label>행사 선택
+                <select id="inquiry-event-select"></select>
+              </label>
+              <label>FAQ 제목
+                <input id="faq-title" placeholder="예: 검진 안내" />
+              </label>
+              <label>FAQ 메시지
+                <textarea id="faq-message" rows="3" placeholder="왓츠앱으로 보낼 예시 답변을 입력하세요."></textarea>
+              </label>
+              <button type="submit">FAQ 추가</button>
+            </form>
+            <ul id="faq-list" class="faq-list"></ul>
+          </section>
+        </section>
+
+        <section id="system-config-view" class="view">
+          <section class="panel">
+            <h2 data-i18n="config_menu">5. System Config (상태/규칙)</h2>
             <form id="config-form">
               <label>행사 선택
                 <select id="config-event-select"></select>
-              </label>
-              <label>답변 템플릿(한국어)
-                <textarea id="tpl-ko" rows="2"></textarea>
-              </label>
-              <label>Answer Template (English)
-                <textarea id="tpl-en" rows="2"></textarea>
-              </label>
-              <label>Шаблон ответа (Русский)
-                <textarea id="tpl-ru" rows="2"></textarea>
               </label>
               <label>created 상태값
                 <input id="cfg-created-status" placeholder="CREATED" />
@@ -204,6 +218,12 @@
             <option value="recontact_needed">재접촉 필요</option>
           </select>
         </label>
+        <div class="whatsapp-box">
+          <label>FAQ 선택
+            <select class="faq-select"></select>
+          </label>
+          <button class="send-whatsapp-btn" type="button">왓츠앱 전송</button>
+        </div>
         <div class="log"></div>
       </article>
     </template>

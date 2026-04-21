@@ -8,6 +8,7 @@ const leadTemplate = document.getElementById("lead-template");
 const instagramIngestForm = document.getElementById("instagram-ingest-form");
 const appendSheetRowBtn = document.getElementById("append-sheet-row-btn");
 const configForm = document.getElementById("config-form");
+const inquiryForm = document.getElementById("inquiry-form");
 const uiLanguageSelect = document.getElementById("ui-language");
 const menuButtons = document.querySelectorAll(".sidebar .menu-btn");
 const quickNavButtons = document.querySelectorAll(".quick-nav");
@@ -16,6 +17,8 @@ const dashboardEventsCount = document.getElementById("dashboard-events-count");
 const dashboardLeadsCount = document.getElementById("dashboard-leads-count");
 const dashboardConsultingCount = document.getElementById("dashboard-consulting-count");
 const statsSummary = document.getElementById("stats-summary");
+const inquiryEventSelect = document.getElementById("inquiry-event-select");
+const faqList = document.getElementById("faq-list");
 
 const state = { events: [], leads: [] };
 const i18n = {
@@ -93,6 +96,7 @@ function selectedEvent() {
 function refreshEventOptions() {
   eventSelect.innerHTML = state.events.map((e) => `<option value="${e.id}">${e.name}</option>`).join("");
   configEventSelect.innerHTML = eventSelect.innerHTML;
+  inquiryEventSelect.innerHTML = eventSelect.innerHTML;
   refreshMeta();
 }
 
@@ -131,12 +135,23 @@ function refreshDashboard() {
 
 function loadConfigForm(ev) {
   const cfg = ev?.config || {};
-  document.getElementById("tpl-ko").value = cfg.replyTemplates?.ko || "";
-  document.getElementById("tpl-en").value = cfg.replyTemplates?.en || "";
-  document.getElementById("tpl-ru").value = cfg.replyTemplates?.ru || "";
   document.getElementById("cfg-created-status").value = cfg.statusConfig?.created || "CREATED";
   document.getElementById("cfg-consulting-values").value = (cfg.statusConfig?.consulting || ["IN_PROGRESS", "상담 중"]).join(",");
   document.getElementById("cfg-phone-prefix").value = cfg.phonePrefixToStrip || "p:";
+}
+
+function eventFaqs(ev) {
+  return ev?.config?.faqTemplates || [];
+}
+
+function loadInquiryForm(ev) {
+  if (!faqList) return;
+  faqList.innerHTML = "";
+  eventFaqs(ev).forEach((faq, index) => {
+    const li = document.createElement("li");
+    li.textContent = `${index + 1}. ${faq.title}: ${faq.message}`;
+    faqList.appendChild(li);
+  });
 }
 
 function applyI18n(lang) {
@@ -155,7 +170,9 @@ async function loadEvents(preferredEventId) {
     const targetEvent = state.events.find((event) => event.id === currentId) || state.events[0];
     eventSelect.value = targetEvent.id;
     configEventSelect.value = targetEvent.id;
+    inquiryEventSelect.value = targetEvent.id;
     loadConfigForm(selectedEvent());
+    loadInquiryForm(selectedEvent());
     await loadLeads();
   }
 }
@@ -189,6 +206,10 @@ function renderLeads() {
     node.querySelector(".lead-meta").textContent = `관심진료: ${lead.service} · 유입시각: ${lead.createdAt}`;
     node.querySelector(".stage-select").value = lead.stage;
     node.querySelector(".log").textContent = lead.log || "로그 없음";
+    const faqSelect = node.querySelector(".faq-select");
+    faqSelect.innerHTML = eventFaqs(ev)
+      .map((faq, index) => `<option value="${index}">${faq.title}</option>`)
+      .join("");
 
     node.querySelector(".stage-select").addEventListener("change", async (e) => {
       await api(`/api/leads/${lead.id}/stage`, {
@@ -206,6 +227,16 @@ function renderLeads() {
         });
         await loadLeads();
       });
+    });
+
+    node.querySelector(".send-whatsapp-btn").addEventListener("click", async () => {
+      const faq = eventFaqs(ev)[Number(faqSelect.value)];
+      if (!faq) return alert("문의관리 탭에서 FAQ를 먼저 등록하세요.");
+      await api(`/api/leads/${lead.id}/send-whatsapp`, {
+        method: "POST",
+        body: JSON.stringify({ message: faq.message, title: faq.title }),
+      });
+      await loadLeads();
     });
 
     leadList.appendChild(node);
@@ -276,11 +307,6 @@ configForm.addEventListener("submit", async (e) => {
         created: document.getElementById("cfg-created-status").value.trim() || "CREATED",
         consulting: consultingValues,
       },
-      replyTemplates: {
-        ko: document.getElementById("tpl-ko").value.trim(),
-        en: document.getElementById("tpl-en").value.trim(),
-        ru: document.getElementById("tpl-ru").value.trim(),
-      },
     }),
   });
   await loadEvents();
@@ -288,6 +314,29 @@ configForm.addEventListener("submit", async (e) => {
   configEventSelect.value = eventId;
   refreshMeta();
   alert("Config 저장 완료");
+});
+
+inquiryForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const eventId = inquiryEventSelect.value;
+  const ev = state.events.find((event) => event.id === eventId);
+  if (!ev) return alert("행사를 먼저 선택하세요.");
+  const title = document.getElementById("faq-title").value.trim();
+  const message = document.getElementById("faq-message").value.trim();
+  if (!title || !message) return alert("FAQ 제목/메시지를 입력하세요.");
+  const faqTemplates = [...eventFaqs(ev), { title, message }];
+  await api(`/api/events/${eventId}/config`, {
+    method: "POST",
+    body: JSON.stringify({ faqTemplates }),
+  });
+  document.getElementById("faq-title").value = "";
+  document.getElementById("faq-message").value = "";
+  await loadEvents(eventId);
+  eventSelect.value = eventId;
+  configEventSelect.value = eventId;
+  inquiryEventSelect.value = eventId;
+  loadInquiryForm(selectedEvent());
+  alert("FAQ 저장 완료");
 });
 
 document.getElementById("simulate-lead-btn").addEventListener("click", async () => {
@@ -354,8 +403,18 @@ eventSelect.addEventListener("change", async () => {
 
 configEventSelect.addEventListener("change", () => {
   eventSelect.value = configEventSelect.value;
+  inquiryEventSelect.value = configEventSelect.value;
   refreshMeta();
   loadConfigForm(selectedEvent());
+  loadInquiryForm(selectedEvent());
+});
+
+inquiryEventSelect.addEventListener("change", () => {
+  eventSelect.value = inquiryEventSelect.value;
+  configEventSelect.value = inquiryEventSelect.value;
+  refreshMeta();
+  loadConfigForm(selectedEvent());
+  loadInquiryForm(selectedEvent());
 });
 
 uiLanguageSelect.addEventListener("change", () => {

@@ -239,6 +239,30 @@ button:hover {
   gap: 8px;
 }
 
+.faq-list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.faq-list li {
+  background: #fff7fa;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.whatsapp-box {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.send-whatsapp-btn {
+  background: #8d1d45;
+}
+
 @media (max-width: 960px) {
   .sidebar {
     position: static;
