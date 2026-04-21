@@ -159,6 +159,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "config": {
                     "phonePrefixToStrip": "p:",
                     "statusConfig": {"created": "CREATED", "consulting": ["IN_PROGRESS", "상담 중"]},
+                    "faqTemplates": [],
                     "replyTemplates": {
                         "ko": "안녕하세요 {{name}}님, 문의 감사합니다.",
                         "en": "Hi {{name}}, thanks for your inquiry.",
@@ -332,6 +333,24 @@ class Handler(SimpleHTTPRequestHandler):
                     lead["log"] = f"상태 변경(API): {stage}"
                     save_db(db)
                     self._send_json(200, lead)
+                    return
+            self._not_found()
+            return
+
+        if path.startswith("/api/leads/") and path.endswith("/send-whatsapp"):
+            lead_id = path.split("/")[3]
+            body = self._read_json()
+            message = body.get("message", "").strip()
+            title = body.get("title", "").strip()
+            if not message:
+                self._send_json(400, {"error": "message is required"})
+                return
+            for lead in db["leads"]:
+                if lead["id"] == lead_id:
+                    lead["stage"] = "consulting"
+                    lead["log"] = f"WhatsApp 발송 완료(API): [{title}] {message[:80]}"
+                    save_db(db)
+                    self._send_json(200, {"status": "sent", "lead": lead})
                     return
             self._not_found()
             return
