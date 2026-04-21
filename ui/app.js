@@ -9,6 +9,12 @@ const instagramIngestForm = document.getElementById("instagram-ingest-form");
 const appendSheetRowBtn = document.getElementById("append-sheet-row-btn");
 const configForm = document.getElementById("config-form");
 const uiLanguageSelect = document.getElementById("ui-language");
+const menuButtons = document.querySelectorAll(".menu-btn");
+const views = document.querySelectorAll(".view");
+const dashboardEventsCount = document.getElementById("dashboard-events-count");
+const dashboardLeadsCount = document.getElementById("dashboard-leads-count");
+const dashboardConsultingCount = document.getElementById("dashboard-consulting-count");
+const statsSummary = document.getElementById("stats-summary");
 
 const state = { events: [], leads: [] };
 const i18n = {
@@ -94,11 +100,32 @@ function refreshMeta() {
   if (!ev) {
     eventMeta.textContent = "행사를 먼저 생성해 주세요.";
     leadList.innerHTML = "";
+    refreshDashboard();
     return;
   }
   const sheet = ev.sheetUrl ? `시트 연결됨: ${ev.sheetUrl}` : "시트 미연결";
   const webhook = ev.sheetWebhookUrl ? "Webhook 연결됨" : "Webhook 미연결";
-  eventMeta.textContent = `현재 행사: ${ev.name} (${ev.country}) · ${sheet} · ${webhook}`;
+  const nextAction = !ev.sheetUrl
+    ? "다음 단계: 2) 구글시트 주소 입력"
+    : "다음 단계: 3) 테스트 리드 유입 또는 Instagram New 인입 실행";
+  eventMeta.textContent = `현재 행사: ${ev.name} (${ev.country}) · ${sheet} · ${webhook} · ${nextAction}`;
+  refreshDashboard();
+}
+
+function refreshDashboard() {
+  if (dashboardEventsCount) dashboardEventsCount.textContent = String(state.events.length);
+  if (dashboardLeadsCount) dashboardLeadsCount.textContent = String(state.leads.length);
+  if (dashboardConsultingCount) {
+    dashboardConsultingCount.textContent = String(state.leads.filter((lead) => lead.stage === "consulting").length);
+  }
+  if (!statsSummary) return;
+  const selected = selectedEvent();
+  statsSummary.innerHTML = `
+    <li>현재 선택 행사: ${selected ? selected.name : "없음"}</li>
+    <li>자동응답 완료: ${state.leads.filter((lead) => lead.stage === "auto_replied").length}</li>
+    <li>예약 완료: ${state.leads.filter((lead) => lead.stage === "booked").length}</li>
+    <li>미응답/재접촉 필요: ${state.leads.filter((lead) => ["no_response", "recontact_needed"].includes(lead.stage)).length}</li>
+  `;
 }
 
 function loadConfigForm(ev) {
@@ -119,12 +146,14 @@ function applyI18n(lang) {
   });
 }
 
-async function loadEvents() {
+async function loadEvents(preferredEventId) {
   state.events = await api("/api/events");
   refreshEventOptions();
   if (state.events.length > 0) {
-    eventSelect.value = state.events[0].id;
-    configEventSelect.value = state.events[0].id;
+    const currentId = preferredEventId || eventSelect.value;
+    const targetEvent = state.events.find((event) => event.id === currentId) || state.events[0];
+    eventSelect.value = targetEvent.id;
+    configEventSelect.value = targetEvent.id;
     loadConfigForm(selectedEvent());
     await loadLeads();
   }
@@ -132,9 +161,14 @@ async function loadEvents() {
 
 async function loadLeads() {
   const ev = selectedEvent();
-  if (!ev) return;
+  if (!ev) {
+    state.leads = [];
+    refreshDashboard();
+    return;
+  }
   state.leads = await api(`/api/events/${ev.id}/leads`);
   renderLeads();
+  refreshDashboard();
 }
 
 function renderLeads() {
@@ -184,7 +218,7 @@ eventForm.addEventListener("submit", async (e) => {
 
   await withButtonBusy(submitButton, async () => {
     try {
-      await api("/api/events", {
+      const createdEvent = await api("/api/events", {
         method: "POST",
         body: JSON.stringify({
           name: document.getElementById("event-name").value.trim(),
@@ -193,7 +227,7 @@ eventForm.addEventListener("submit", async (e) => {
         }),
       });
       eventForm.reset();
-      await loadEvents();
+      await loadEvents(createdEvent.id);
       alert("행사 저장 완료");
     } catch (error) {
       showError("행사 저장", error);
@@ -327,7 +361,19 @@ uiLanguageSelect.addEventListener("change", () => {
   applyI18n(uiLanguageSelect.value);
 });
 
+menuButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const viewId = button.dataset.view;
+    menuButtons.forEach((btn) => btn.classList.toggle("active", btn === button));
+    views.forEach((view) => view.classList.toggle("active", view.id === viewId));
+  });
+});
+
 loadEvents().catch((e) => {
   eventMeta.textContent = `서버 연결 실패: ${e.message}`;
 });
 applyI18n("ko");
+
+if (window.lucide && typeof window.lucide.createIcons === "function") {
+  window.lucide.createIcons();
+}
