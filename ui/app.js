@@ -163,10 +163,11 @@ function applyI18n(lang) {
 }
 
 async function loadEvents(preferredEventId) {
+  const previousSelectedId = eventSelect.value;
   state.events = await api("/api/events");
   refreshEventOptions();
   if (state.events.length > 0) {
-    const currentId = preferredEventId || eventSelect.value;
+    const currentId = preferredEventId || previousSelectedId || eventSelect.value;
     const targetEvent = state.events.find((event) => event.id === currentId) || state.events[0];
     eventSelect.value = targetEvent.id;
     configEventSelect.value = targetEvent.id;
@@ -278,22 +279,56 @@ sheetForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const ev = selectedEvent();
   if (!ev) return;
-  await api(`/api/events/${ev.id}/sheet`, {
-    method: "POST",
-    body: JSON.stringify({ sheetUrl: document.getElementById("sheet-url").value.trim() }),
+  const submitButton = sheetForm.querySelector('button[type="submit"]');
+  if (!submitButton) return;
+  await withButtonBusy(submitButton, async () => {
+    try {
+      await api(`/api/events/${ev.id}/sheet`, {
+        method: "POST",
+        body: JSON.stringify({ sheetUrl: document.getElementById("sheet-url").value.trim() }),
+      });
+      const webhookUrl = document.getElementById("sheet-webhook-url").value.trim();
+      if (webhookUrl) {
+        await api(`/api/events/${ev.id}/sheet-webhook`, {
+          method: "POST",
+          body: JSON.stringify({ sheetWebhookUrl: webhookUrl }),
+        });
+      }
+      await loadEvents(ev.id);
+      eventSelect.value = ev.id;
+      configEventSelect.value = ev.id;
+      inquiryEventSelect.value = ev.id;
+      refreshMeta();
+      alert("시트 연결 저장 완료");
+    } catch (error) {
+      showError("시트 연결 저장", error);
+    }
   });
-  const webhookUrl = document.getElementById("sheet-webhook-url").value.trim();
-  if (webhookUrl) {
-    await api(`/api/events/${ev.id}/sheet-webhook`, {
-      method: "POST",
-      body: JSON.stringify({ sheetWebhookUrl: webhookUrl }),
-    });
+});
+
+document.getElementById("simulate-lead-btn").addEventListener("click", async () => {
+  const ev = selectedEvent();
+  if (!ev) return alert("행사를 먼저 생성하세요.");
+  if (!ev.sheetUrl) return alert("구글시트 주소를 먼저 연결하세요.");
+  try {
+    await api(`/api/events/${ev.id}/leads`, { method: "POST", body: JSON.stringify({}) });
+    await loadLeads();
+    alert("테스트 리드 인입 완료");
+  } catch (error) {
+    showError("테스트 리드 인입", error);
   }
-  await loadEvents();
-  eventSelect.value = ev.id;
-  configEventSelect.value = ev.id;
-  refreshMeta();
-  alert("시트 연결 저장 완료");
+});
+
+document.getElementById("run-auto-reply-btn").addEventListener("click", async () => {
+  try {
+    for (const lead of state.leads.filter((l) => l.stage === "new_lead")) {
+      await api(`/api/leads/${lead.id}/auto-reply`, { method: "POST", body: JSON.stringify({}) });
+    }
+    await loadLeads();
+    alert("자동응답 실행 완료");
+  } catch (error) {
+    showError("자동응답 실행", error);
+  }
 });
 
 configForm.addEventListener("submit", async (e) => {
@@ -347,20 +382,6 @@ inquiryForm.addEventListener("submit", async (e) => {
   alert("FAQ 저장 완료");
 });
 
-document.getElementById("simulate-lead-btn").addEventListener("click", async () => {
-  const ev = selectedEvent();
-  if (!ev) return alert("행사를 먼저 생성하세요.");
-  if (!ev.sheetUrl) return alert("구글시트 주소를 먼저 연결하세요.");
-  await api(`/api/events/${ev.id}/leads`, { method: "POST", body: JSON.stringify({}) });
-  await loadLeads();
-});
-
-document.getElementById("run-auto-reply-btn").addEventListener("click", async () => {
-  for (const lead of state.leads.filter((l) => l.stage === "new_lead")) {
-    await api(`/api/leads/${lead.id}/auto-reply`, { method: "POST", body: JSON.stringify({}) });
-  }
-  await loadLeads();
-});
 
 instagramIngestForm.addEventListener("submit", async (e) => {
   e.preventDefault();
