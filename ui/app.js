@@ -237,6 +237,16 @@ function renderLeads() {
       });
     });
 
+    node.querySelector(".send-whatsapp-btn").addEventListener("click", async () => {
+      const faq = eventFaqs(ev)[Number(faqSelect.value)];
+      if (!faq) return alert("문의관리 탭에서 FAQ를 먼저 등록하세요.");
+      await api(`/api/leads/${lead.id}/send-whatsapp`, {
+        method: "POST",
+        body: JSON.stringify({ message: faq.message, title: faq.title }),
+      });
+      await loadLeads();
+    });
+
     leadList.appendChild(node);
   });
 }
