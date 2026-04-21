@@ -22,11 +22,14 @@ body {
 
 .app-shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 280px 1fr;
 }
 
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 100vh;
   background: linear-gradient(180deg, var(--sidebar), var(--primary-strong));
   color: #fff;
   padding: 24px 18px;
@@ -84,7 +87,9 @@ body {
 }
 
 main {
-  padding: 24px;
+  margin-left: 280px;
+  padding: 24px 28px;
+  max-width: 1300px;
 }
 
 .view {
@@ -102,6 +107,11 @@ main {
   padding: 16px;
   border: 1px solid var(--line);
   box-shadow: 0 8px 20px rgba(92, 16, 35, 0.05);
+}
+
+.hero-copy {
+  margin: 0 0 10px;
+  color: var(--text-soft);
 }
 
 form {
@@ -126,6 +136,12 @@ button {
   background: var(--primary);
   color: #fff;
   border: none;
+}
+
+.quick-nav {
+  background: #ffffff;
+  color: var(--primary);
+  border: 1px solid var(--accent);
 }
 
 button:hover {
@@ -221,4 +237,16 @@ button:hover {
   padding-left: 20px;
   display: grid;
   gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+  }
+
+  main {
+    margin-left: 0;
+  }
 }

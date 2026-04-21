@@ -9,7 +9,8 @@ const instagramIngestForm = document.getElementById("instagram-ingest-form");
 const appendSheetRowBtn = document.getElementById("append-sheet-row-btn");
 const configForm = document.getElementById("config-form");
 const uiLanguageSelect = document.getElementById("ui-language");
-const menuButtons = document.querySelectorAll(".menu-btn");
+const menuButtons = document.querySelectorAll(".sidebar .menu-btn");
+const quickNavButtons = document.querySelectorAll(".quick-nav");
 const views = document.querySelectorAll(".view");
 const dashboardEventsCount = document.getElementById("dashboard-events-count");
 const dashboardLeadsCount = document.getElementById("dashboard-leads-count");
@@ -105,7 +106,27 @@ function refreshMeta() {
   }
   const sheet = ev.sheetUrl ? `시트 연결됨: ${ev.sheetUrl}` : "시트 미연결";
   const webhook = ev.sheetWebhookUrl ? "Webhook 연결됨" : "Webhook 미연결";
-  eventMeta.textContent = `현재 행사: ${ev.name} (${ev.country}) · ${sheet} · ${webhook}`;
+  const nextAction = !ev.sheetUrl
+    ? "다음 단계: 2) 구글시트 주소 입력"
+    : "다음 단계: 3) 테스트 리드 유입 또는 Instagram New 인입 실행";
+  eventMeta.textContent = `현재 행사: ${ev.name} (${ev.country}) · ${sheet} · ${webhook} · ${nextAction}`;
+  refreshDashboard();
+}
+
+function refreshDashboard() {
+  if (dashboardEventsCount) dashboardEventsCount.textContent = String(state.events.length);
+  if (dashboardLeadsCount) dashboardLeadsCount.textContent = String(state.leads.length);
+  if (dashboardConsultingCount) {
+    dashboardConsultingCount.textContent = String(state.leads.filter((lead) => lead.stage === "consulting").length);
+  }
+  if (!statsSummary) return;
+  const selected = selectedEvent();
+  statsSummary.innerHTML = `
+    <li>현재 선택 행사: ${selected ? selected.name : "없음"}</li>
+    <li>자동응답 완료: ${state.leads.filter((lead) => lead.stage === "auto_replied").length}</li>
+    <li>예약 완료: ${state.leads.filter((lead) => lead.stage === "booked").length}</li>
+    <li>미응답/재접촉 필요: ${state.leads.filter((lead) => ["no_response", "recontact_needed"].includes(lead.stage)).length}</li>
+  `;
 }
 
 function loadConfigForm(ev) {
@@ -346,6 +367,14 @@ menuButtons.forEach((button) => {
     const viewId = button.dataset.view;
     menuButtons.forEach((btn) => btn.classList.toggle("active", btn === button));
     views.forEach((view) => view.classList.toggle("active", view.id === viewId));
+  });
+});
+
+quickNavButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const viewId = button.dataset.view;
+    views.forEach((view) => view.classList.toggle("active", view.id === viewId));
+    menuButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === viewId));
   });
 });
 
