@@ -61,6 +61,23 @@ async function api(path, options = {}) {
   return res.json();
 }
 
+function showError(actionLabel, error) {
+  const message = error instanceof Error ? error.message : String(error);
+  alert(`${actionLabel} 실패: ${message}`);
+}
+
+async function withButtonBusy(button, task) {
+  const previousText = button.textContent;
+  button.disabled = true;
+  button.textContent = "저장 중...";
+  try {
+    await task();
+  } finally {
+    button.disabled = false;
+    button.textContent = previousText;
+  }
+}
+
 function selectedEvent() {
   const id = eventSelect.value;
   return state.events.find((e) => e.id === id);
@@ -162,16 +179,26 @@ function renderLeads() {
 
 eventForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  await api("/api/events", {
-    method: "POST",
-    body: JSON.stringify({
-      name: document.getElementById("event-name").value.trim(),
-      country: document.getElementById("event-country").value.trim(),
-      defaultService: document.getElementById("default-service").value,
-    }),
+  const submitButton = eventForm.querySelector('button[type="submit"]');
+  if (!submitButton) return;
+
+  await withButtonBusy(submitButton, async () => {
+    try {
+      await api("/api/events", {
+        method: "POST",
+        body: JSON.stringify({
+          name: document.getElementById("event-name").value.trim(),
+          country: document.getElementById("event-country").value.trim(),
+          defaultService: document.getElementById("default-service").value,
+        }),
+      });
+      eventForm.reset();
+      await loadEvents();
+      alert("행사 저장 완료");
+    } catch (error) {
+      showError("행사 저장", error);
+    }
   });
-  eventForm.reset();
-  await loadEvents();
 });
 
 sheetForm.addEventListener("submit", async (e) => {
