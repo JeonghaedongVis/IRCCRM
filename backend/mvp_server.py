@@ -16,11 +16,17 @@ from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "data"
-DB_FILE = DATA_DIR / "crm.db"
 LEGACY_JSON = DATA_DIR / "mvp_db.json"
 SHEET_ROWS_PATH = DATA_DIR / "sheet_rows.json"
-BACKUP_DIR = DATA_DIR / "backups"
 BACKUP_RETAIN = 7  # 직전 N일 보관
+
+# Vercel: 파일시스템이 읽기전용이므로 /tmp 사용 (데이터 임시 저장)
+if os.environ.get("VERCEL"):
+    DB_FILE = Path("/tmp/crm.db")
+    BACKUP_DIR = Path("/tmp/backups")
+else:
+    DB_FILE = DATA_DIR / "crm.db"
+    BACKUP_DIR = DATA_DIR / "backups"
 
 SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets"
 
