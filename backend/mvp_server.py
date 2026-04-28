@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlparse, quote
 from urllib.request import Request, urlopen
 
@@ -53,8 +54,17 @@ def fetch_sheet_rows(sheet_id: str, api_key: str, sheet_name: str = "") -> list[
     range_param = f"{sheet_name}!A:Z" if sheet_name else "A:Z"
     url = f"{SHEETS_API_BASE}/{sheet_id}/values/{quote(range_param, safe='!:')}?key={api_key}"
     req = Request(url)
-    with urlopen(req, timeout=10) as resp:  # nosec B310
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urlopen(req, timeout=10) as resp:  # nosec B310
+            data = json.loads(resp.read().decode("utf-8"))
+    except HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        try:
+            err_json = json.loads(body)
+            msg = err_json.get("error", {}).get("message", body)
+        except Exception:
+            msg = body[:300]
+        raise Exception(f"Google API {e.code}: {msg}") from e
     values = data.get("values", [])
     if not values:
         return []
