@@ -41,6 +41,9 @@
               <button class="menu-btn menu-sub" data-view="system-config-view">
                 <i data-lucide="sliders-horizontal"></i><span data-i18n="nav_event_settings">행사 세부 설정</span>
               </button>
+              <button class="menu-btn menu-sub" data-view="whatsapp-config-view">
+                <i data-lucide="message-circle"></i><span data-i18n="nav_whatsapp">WhatsApp 연동</span>
+              </button>
               <button class="menu-btn menu-sub" data-view="config-view">
                 <i data-lucide="message-square-text"></i><span data-i18n="nav_faq_settings">FAQ 설정</span>
               </button>
@@ -48,14 +51,24 @@
           </div>
         </nav>
 
-        <label class="language-box">
-          <span data-i18n="language">언어</span>
-          <select id="ui-language">
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-          </select>
-        </label>
+        <div class="sidebar-foot">
+          <div class="theme-shortcut-row">
+            <button id="theme-toggle" class="icon-btn" type="button" title="테마">
+              <i data-lucide="moon"></i><span id="theme-label" data-i18n="theme_dark">다크</span>
+            </button>
+            <button id="kbd-help-btn" class="icon-btn" type="button" title="단축키">
+              <i data-lucide="keyboard"></i><kbd>?</kbd>
+            </button>
+          </div>
+          <label class="language-box">
+            <span data-i18n="language">언어</span>
+            <select id="ui-language">
+              <option value="ko">한국어</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+            </select>
+          </label>
+        </div>
       </aside>
 
       <main>
@@ -190,6 +203,126 @@
               <label><span data-i18n="form_webhook_url">Sheet Webhook URL</span> <small data-i18n="form_webhook_url_hint">Apps Script로 시트에 쓰기 (선택)</small>
                 <input id="sheet-webhook-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
               </label>
+
+              <details class="manual-panel">
+                <summary>
+                  <i data-lucide="book-open" class="manual-icon"></i>
+                  <span data-i18n="manual_title">Apps Script 연동 가이드</span>
+                  <i data-lucide="chevron-down" class="manual-chevron"></i>
+                </summary>
+                <div class="manual-body">
+                  <p class="manual-intro" data-i18n="manual_intro">CRM에서 단계가 변경되면 시트의 lead_status 컬럼이 자동 업데이트됩니다. 아래 절차를 1회만 따르면 됩니다.</p>
+
+                  <ol class="manual-steps">
+                    <li><span data-i18n="manual_step_1">연동할 Google Sheet를 브라우저에서 엽니다.</span></li>
+                    <li><span data-i18n="manual_step_2">상단 메뉴 [확장 프로그램(Extensions) > Apps Script] 클릭.</span></li>
+                    <li><span data-i18n="manual_step_3">기본 Code.gs 내용을 모두 지우고 아래 코드를 붙여넣습니다.</span></li>
+                  </ol>
+
+                  <div class="code-block">
+                    <button type="button" class="code-copy-btn" id="copy-appscript-btn">
+                      <i data-lucide="copy"></i><span data-i18n="manual_copy">코드 복사</span>
+                    </button>
+<pre id="apps-script-code"><code>const SHEET_NAME = "Instagram New"; // ← 본인 시트 탭명으로 수정
+
+const COL = {
+  id: "id",
+  phone: "phone_number",
+  name: "full_name",
+  status: "lead_status",
+  platform: "platform",
+  createdTime: "created_time",
+};
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action || "append";
+    let result;
+    if (action === "update_status")  result = updateStatus(payload);
+    else if (action === "append")    result = appendRow(payload);
+    else result = { ok: false, error: "unknown action: " + action };
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) throw new Error("Sheet not found: " + SHEET_NAME);
+  return sh;
+}
+
+function getHeaderMap(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach((h, i) => { map[String(h).trim()] = i + 1; });
+  return { headers, map };
+}
+
+function updateStatus(payload) {
+  const sheet = getSheet();
+  const { map } = getHeaderMap(sheet);
+  const idCol = map[COL.id];
+  const phoneCol = map[COL.phone];
+  const statusCol = map[COL.status];
+  if (!statusCol) throw new Error("lead_status column not found");
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { ok: false, error: "no data rows" };
+  const rowId = String(payload.rowId || "").trim();
+  const phone = String(payload.phone || "").trim();
+  const newStatus = String(payload.lead_status || "").trim();
+  if (rowId && idCol) {
+    const idValues = sheet.getRange(2, idCol, lastRow - 1, 1).getValues();
+    for (let i = 0; i < idValues.length; i++) {
+      if (String(idValues[i][0]).trim() === rowId) {
+        sheet.getRange(i + 2, statusCol).setValue(newStatus);
+        return { ok: true, matched: "id", row: i + 2, status: newStatus };
+      }
+    }
+  }
+  if (phone && phoneCol) {
+    const phoneValues = sheet.getRange(2, phoneCol, lastRow - 1, 1).getValues();
+    for (let i = 0; i < phoneValues.length; i++) {
+      const cell = String(phoneValues[i][0]).trim();
+      if (cell && (cell === phone || cell.endsWith(phone) || phone.endsWith(cell))) {
+        sheet.getRange(i + 2, statusCol).setValue(newStatus);
+        return { ok: true, matched: "phone", row: i + 2, status: newStatus };
+      }
+    }
+  }
+  return { ok: false, error: "no matching row", rowId: rowId, phone: phone };
+}
+
+function appendRow(payload) {
+  const sheet = getSheet();
+  const { headers, map } = getHeaderMap(sheet);
+  const row = headers.map(() => "");
+  if (map[COL.createdTime]) row[map[COL.createdTime] - 1] = payload.created_time || new Date().toISOString();
+  if (map[COL.platform])    row[map[COL.platform] - 1]    = payload.platform || "";
+  if (map[COL.phone])       row[map[COL.phone] - 1]       = payload.phone_number || "";
+  if (map[COL.name])        row[map[COL.name] - 1]        = payload.full_name || "";
+  if (map[COL.status])      row[map[COL.status] - 1]      = payload.lead_status || "CREATED";
+  sheet.appendRow(row);
+  return { ok: true, action: "appended", row: sheet.getLastRow() };
+}</code></pre>
+                  </div>
+
+                  <ol class="manual-steps" start="4">
+                    <li><span data-i18n="manual_step_4">Code.gs 최상단의 SHEET_NAME 값을 본인 시트 탭명으로 수정합니다.</span></li>
+                    <li><span data-i18n="manual_step_5">Ctrl+S 로 저장. 프로젝트 이름을 묻는 경우 임의로 지정.</span></li>
+                    <li><span data-i18n="manual_step_6">우측 상단 [배포 > 새 배포] → 유형 [웹 앱] 선택.</span></li>
+                    <li><span data-i18n="manual_step_7">실행 사용자: 나(시트 소유자), 액세스: 모든 사용자 → [배포] 클릭.</span></li>
+                    <li><span data-i18n="manual_step_8">권한 승인 후, 발급된 웹앱 URL을 위 [Sheet Webhook URL] 칸에 붙여넣고 [시트 설정 저장] 클릭.</span></li>
+                  </ol>
+
+                  <p class="manual-warning"><i data-lucide="alert-triangle"></i><span data-i18n="manual_warning">코드 수정 후에는 반드시 [배포 > 새 배포]로 새 버전을 만들어야 변경사항이 반영됩니다. 발급된 URL은 익명 호출이 가능하므로 외부 노출에 주의하세요.</span></p>
+                </div>
+              </details>
               <div class="actions">
                 <button type="submit">
                   <i data-lucide="save"></i><span data-i18n="btn_save_sheet">시트 설정 저장</span>
@@ -222,12 +355,35 @@
                 <button id="run-auto-reply-btn" class="btn-accent">
                   <i data-lucide="zap"></i><span data-i18n="btn_run_auto_reply">신규 일괄 자동응답</span>
                 </button>
+                <button id="export-csv-btn" type="button" class="btn-secondary">
+                  <i data-lucide="file-down"></i><span data-i18n="btn_export_csv">CSV 내보내기</span>
+                </button>
                 <button id="clear-leads-btn" type="button" class="btn-danger-ghost">
                   <i data-lucide="trash-2"></i><span data-i18n="btn_clear_leads">전체 비우기</span>
                 </button>
               </div>
             </div>
             <div id="import-result" class="result-box" style="display:none;"></div>
+
+            <div class="auto-refresh-bar">
+              <label class="switch-label">
+                <input type="checkbox" id="auto-refresh-toggle" />
+                <span class="switch"></span>
+                <span data-i18n="auto_refresh_label">자동 새로고침</span>
+                <small id="auto-refresh-status"></small>
+              </label>
+              <select id="auto-refresh-interval" class="interval-select">
+                <option value="15000">15s</option>
+                <option value="30000" selected>30s</option>
+                <option value="60000">1m</option>
+                <option value="180000">3m</option>
+              </select>
+              <label class="switch-label">
+                <input type="checkbox" id="notify-toggle" />
+                <span class="switch"></span>
+                <span data-i18n="notify_label">데스크톱 알림</span>
+              </label>
+            </div>
 
             <div class="lead-toolbar">
               <div class="search-box">
@@ -299,14 +455,105 @@
               <h2 data-i18n="page_stats_title">통계</h2>
               <p class="page-sub" data-i18n="page_stats_sub">현재 선택된 행사 기준 요약 지표입니다.</p>
             </div>
+            <div class="stats-kpis">
+              <div class="kpi"><span class="kpi-label" data-i18n="kpi_response_rate">응답률</span><strong id="kpi-response-rate">—</strong></div>
+              <div class="kpi"><span class="kpi-label" data-i18n="kpi_sla">10분 SLA</span><strong id="kpi-sla">—</strong></div>
+              <div class="kpi"><span class="kpi-label" data-i18n="kpi_booking_rate">예약 전환율</span><strong id="kpi-booking-rate">—</strong></div>
+              <div class="kpi"><span class="kpi-label" data-i18n="kpi_avg_response">평균 응답시간</span><strong id="kpi-avg-response">—</strong></div>
+            </div>
           </header>
+
           <section class="panel">
-            <div class="panel-header"><h3 data-i18n="panel_stage_dist">단계별 분포</h3></div>
-            <div class="stage-breakdown" id="stats-stage-breakdown"></div>
+            <div class="panel-header">
+              <h3><i data-lucide="git-branch"></i> <span data-i18n="panel_funnel">전환 퍼널</span></h3>
+              <span class="meta" data-i18n="panel_funnel_sub">단계별 누적 도달 + 이탈률</span>
+            </div>
+            <div id="chart-funnel" class="chart-container"></div>
           </section>
+
+          <section class="stats-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <h3><i data-lucide="bar-chart-3"></i> <span data-i18n="panel_stage_dist">단계별 분포</span></h3>
+              </div>
+              <div class="stage-breakdown" id="stats-stage-breakdown"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <h3><i data-lucide="pie-chart"></i> <span data-i18n="panel_platform">플랫폼별 분포</span></h3>
+              </div>
+              <div id="chart-platform" class="chart-container"></div>
+            </section>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3><i data-lucide="calendar"></i> <span data-i18n="panel_daily">일별 유입 (최근 14일)</span></h3>
+            </div>
+            <div id="chart-daily" class="chart-container chart-daily"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3><i data-lucide="clock"></i> <span data-i18n="panel_hourly">시간대별 유입</span></h3>
+              <span class="meta" data-i18n="panel_hourly_sub">UTC 기준 0~23시</span>
+            </div>
+            <div id="chart-hourly" class="chart-container chart-hourly"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3><i data-lucide="megaphone"></i> <span data-i18n="panel_campaigns">캠페인별 유입 TOP 10</span></h3>
+            </div>
+            <div id="chart-campaigns" class="chart-container"></div>
+          </section>
+
           <section class="panel">
             <div class="panel-header"><h3 data-i18n="summary_title">요약</h3></div>
             <ul id="stats-summary"></ul>
+          </section>
+        </section>
+
+        <!-- WhatsApp Integration -->
+        <section id="whatsapp-config-view" class="view">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_whatsapp_title">WhatsApp 연동</h2>
+              <p class="page-sub" data-i18n="page_whatsapp_sub">FAQ 응답 발송 시 사용할 WhatsApp Cloud API 인증 정보를 입력합니다. 행사별로 분리 저장됩니다.</p>
+            </div>
+          </header>
+          <section class="panel">
+            <div class="panel-header">
+              <h3><i data-lucide="message-circle"></i> <span data-i18n="panel_whatsapp_creds">WhatsApp Cloud API 인증</span></h3>
+            </div>
+            <form id="whatsapp-form">
+              <label><span data-i18n="form_event_select">행사 선택</span>
+                <select id="whatsapp-event-select"></select>
+              </label>
+              <label><span data-i18n="form_wa_phone_id">Phone Number ID</span> <small data-i18n="form_wa_phone_id_hint">Meta for Developers에서 발급</small>
+                <input id="wa-phone-id" placeholder="123456789012345" />
+              </label>
+              <label><span data-i18n="form_wa_token">Access Token</span> <small data-i18n="form_wa_token_hint">시스템 사용자 영구 토큰 권장</small>
+                <input id="wa-access-token" type="password" placeholder="EAAxxxxxxxx..." autocomplete="off" />
+              </label>
+              <div class="form-row">
+                <label><span data-i18n="form_wa_api_version">API Version</span> <small data-i18n="form_wa_api_version_hint">기본값 v17.0</small>
+                  <input id="wa-api-version" placeholder="v17.0" />
+                </label>
+                <label><span data-i18n="form_wa_business_id">Business Account ID</span> <small data-i18n="form_wa_business_id_hint">선택사항</small>
+                  <input id="wa-business-id" placeholder="" />
+                </label>
+              </div>
+              <label><span data-i18n="form_wa_test_recipient">테스트 수신 번호</span> <small data-i18n="form_wa_test_recipient_hint">선택사항, E.164 형식 (+82...)</small>
+                <input id="wa-test-recipient" placeholder="+821012345678" />
+              </label>
+              <div class="actions">
+                <button type="submit">
+                  <i data-lucide="save"></i><span data-i18n="btn_save_whatsapp">WhatsApp 설정 저장</span>
+                </button>
+              </div>
+            </form>
           </section>
         </section>
 
@@ -407,7 +654,7 @@
                 <label><span data-i18n="form_cfg_consulting_alts">consulting 추가 인식값</span> <small data-i18n="form_cfg_consulting_hint">쉼표 구분, 시트의 기존 값들</small>
                   <input id="cfg-consulting-values" placeholder="IN_PROGRESS,상담 중" />
                 </label>
-                <label><span data-i18n="form_cfg_phone_prefix">전화번호 prefix 제거</span>
+                <label><span data-i18n="form_cfg_phone_prefix">전화번호 prefix 제거</span> <small data-i18n="form_cfg_phone_prefix_hint">예: p:+77... → +77...</small>
                   <input id="cfg-phone-prefix" placeholder="p:" />
                 </label>
               </div>
@@ -430,8 +677,10 @@
             <div class="lead-row-1">
               <strong class="lead-name"></strong>
               <span class="lead-stage"></span>
+              <span class="sla-badge" style="display:none;"></span>
             </div>
             <p class="lead-meta"></p>
+            <p class="lead-campaign"></p>
           </div>
           <select class="stage-select" aria-label="단계 변경">
             <option value="new_lead" data-i18n="stage_new_lead">신규 리드</option>
@@ -444,9 +693,71 @@
           </select>
         </div>
         <div class="faq-buttons"></div>
-        <div class="log"></div>
+        <div class="lead-tabs">
+          <button type="button" class="lead-tab active" data-tab="log">
+            <i data-lucide="activity"></i><span data-i18n="tab_log">활동</span>
+          </button>
+          <button type="button" class="lead-tab" data-tab="notes">
+            <i data-lucide="sticky-note"></i><span data-i18n="tab_notes">메모</span>
+            <span class="notes-count"></span>
+          </button>
+        </div>
+        <div class="lead-tab-content tab-log active">
+          <div class="activity-timeline"></div>
+        </div>
+        <div class="lead-tab-content tab-notes">
+          <div class="notes-list"></div>
+          <form class="note-add-form">
+            <input type="text" class="note-input" data-i18n-ph="note_input_ph" placeholder="메모 추가..." maxlength="500" />
+            <button type="submit" class="btn-secondary">
+              <i data-lucide="plus"></i><span data-i18n="btn_add_note">추가</span>
+            </button>
+          </form>
+        </div>
       </article>
     </template>
+
+    <div id="kbd-help-modal" class="modal-backdrop" role="dialog" aria-hidden="true">
+      <div class="modal">
+        <div class="modal-header">
+          <h3><i data-lucide="keyboard"></i> <span data-i18n="kbd_modal_title">키보드 단축키</span></h3>
+          <button class="modal-close" type="button" aria-label="close"><i data-lucide="x"></i></button>
+        </div>
+
+        <div class="kbd-section" data-i18n="kbd_section_nav">탐색</div>
+        <div class="kbd-grid">
+          <div class="kbd-row"><span class="kbd-keys"><kbd>g</kbd> <kbd>d</kbd></span><span class="kbd-desc" data-i18n="kbd_goto_dashboard">대시보드로 이동</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>g</kbd> <kbd>c</kbd></span><span class="kbd-desc" data-i18n="kbd_goto_crm">행사/시트 연결로 이동</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>g</kbd> <kbd>l</kbd></span><span class="kbd-desc" data-i18n="kbd_goto_leads">리드 현황으로 이동</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>g</kbd> <kbd>s</kbd></span><span class="kbd-desc" data-i18n="kbd_goto_stats">통계로 이동</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>g</kbd> <kbd>e</kbd></span><span class="kbd-desc" data-i18n="kbd_goto_event_settings">행사 세부 설정으로 이동</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>g</kbd> <kbd>f</kbd></span><span class="kbd-desc" data-i18n="kbd_goto_faq">FAQ 설정으로 이동</span></div>
+        </div>
+
+        <div class="kbd-section" data-i18n="kbd_section_action">동작</div>
+        <div class="kbd-grid">
+          <div class="kbd-row"><span class="kbd-keys"><kbd>/</kbd></span><span class="kbd-desc" data-i18n="kbd_focus_search">검색창 포커스</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>r</kbd></span><span class="kbd-desc" data-i18n="kbd_refresh">리드 수동 새로고침</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>a</kbd></span><span class="kbd-desc" data-i18n="kbd_auto_reply">신규 일괄 자동응답</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>i</kbd></span><span class="kbd-desc" data-i18n="kbd_import">시트에서 가져오기</span></div>
+        </div>
+
+        <div class="kbd-section" data-i18n="kbd_section_filter">필터</div>
+        <div class="kbd-grid">
+          <div class="kbd-row"><span class="kbd-keys"><kbd>f</kbd> <kbd>1</kbd></span><span class="kbd-desc" data-i18n="kbd_filter_all">전체</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>f</kbd> <kbd>2</kbd></span><span class="kbd-desc" data-i18n="kbd_filter_needs">답변 필요</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>f</kbd> <kbd>3</kbd></span><span class="kbd-desc" data-i18n="kbd_filter_progress">진행중</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>f</kbd> <kbd>4</kbd></span><span class="kbd-desc" data-i18n="kbd_filter_done">완료</span></div>
+        </div>
+
+        <div class="kbd-section" data-i18n="kbd_section_general">일반</div>
+        <div class="kbd-grid">
+          <div class="kbd-row"><span class="kbd-keys"><kbd>?</kbd></span><span class="kbd-desc" data-i18n="kbd_help">이 도움말 열기</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>Esc</kbd></span><span class="kbd-desc" data-i18n="kbd_esc">모달 닫기 / 검색 비우기</span></div>
+          <div class="kbd-row"><span class="kbd-keys"><kbd>t</kbd></span><span class="kbd-desc" data-i18n="kbd_theme">테마 전환 (라이트/다크)</span></div>
+        </div>
+      </div>
+    </div>
 
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>

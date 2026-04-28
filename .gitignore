@@ -21,3 +21,14 @@ Thumbs.db
 # Logs / Temp
 *.log
 *.tmp
+
+# Secrets
+.env
+.env.local
+
+# Runtime data (SQLite + backups)
+data/crm.db
+data/crm.db-wal
+data/crm.db-shm
+data/backups/
+data/*.json.migrated
