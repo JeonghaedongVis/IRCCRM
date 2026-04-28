@@ -947,7 +947,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("CRM_PORT", "8080"))
+    port = int(os.environ.get("PORT") or os.environ.get("CRM_PORT", "8080"))
 
     init_db()
     migrate_legacy_json()
