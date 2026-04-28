@@ -81,8 +81,7 @@
 5. **Normalizer**
    - 전화번호, 국가코드, 언어 fallback 정리
 6. **Message Sender**
-   - KR: Kakao provider API
-   - 글로벌: WhatsApp Cloud API
+   - WhatsApp Cloud API
 7. **HubSpot Update**
    - stage=`auto_replied`
    - `message_last_status`, `last_template_code` 업데이트
@@ -202,7 +201,7 @@ Reply with your preferred time and we will book it for you.
 ---
 
 ## 7) 다음 액션(권장)
-1. 현재 사용 중인 메신저 공급사(카카오/WhatsApp) 확정
+1. WhatsApp Business API 계정 및 템플릿 승인 확인
 2. 첫 이벤트의 실제 시트 컬럼 샘플 1개 확보
 3. 본 문서 기준으로 내부키(속성명) 확정 후 즉시 구축 시작
 

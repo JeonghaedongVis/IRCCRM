@@ -178,8 +178,7 @@
 ## M10_Send_Message
 **Input**: `template_code`, `template_variables`, `mobile_e164`, `country_code`  
 **Router**:
-- KR/카카오 가능권역: Kakao Provider API
-- 그 외: WhatsApp Cloud API
+- WhatsApp Cloud API
 
 **Output**:
 - `message_status` (sent/delivered/failed)

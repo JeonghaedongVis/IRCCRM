@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(python3 -c ' *)",
+      "PowerShell(netstat -ano)",
+      "PowerShell(Get-Process -Id 11988, 5444)",
+      "PowerShell(Stop-Process -Id 11988, 5444 -Force)",
+      "Bash(python3 -m py_compile backend/mvp_server.py)",
+      "PowerShell(python -m py_compile backend/mvp_server.py 2>&1)",
+      "PowerShell(python -c \"import backend.mvp_server\" 2>&1)",
+      "PowerShell(python backend/mvp_server.py --help 2>&1)",
+      "PowerShell(head -5)",
+      "Bash(grep -n *)",
+      "Bash(git reset *)",
+      "Bash(git add *)"
+    ]
+  }
+}

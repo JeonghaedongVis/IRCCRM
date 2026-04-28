@@ -3,40 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Event CRM MVP UI</title>
+    <title>Event CRM</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div id="toast-container"></div>
+
     <div class="app-shell">
       <aside class="sidebar">
         <div>
-          <h1 data-i18n="title">이벤트 CRM MVP</h1>
-          <p data-i18n="subtitle">새 행사 생성 → 구글시트 연결 → 자동응답/상담 진행</p>
+          <h1 data-i18n="title">Event CRM</h1>
+          <p data-i18n="subtitle">행사 → 시트 연결 → 자동응답 → 상담</p>
         </div>
         <nav class="menu">
           <button class="menu-btn active" data-view="dashboard-view">
-            <i data-lucide="layout-dashboard"></i>
-            <span>1. 대시보드</span>
+            <span class="menu-icon">📊</span><span>대시보드</span>
           </button>
           <button class="menu-btn" data-view="crm-view">
-            <i data-lucide="workflow"></i>
-            <span>2. CRM 기능구현페이지 연결</span>
+            <span class="menu-icon">⚙️</span><span>행사 / 시트 연결</span>
           </button>
           <button class="menu-btn" data-view="patient-view">
-            <i data-lucide="users"></i>
-            <span>3. 환자 인입 현황</span>
+            <span class="menu-icon">👥</span><span>리드 / 환자 현황</span>
           </button>
           <button class="menu-btn" data-view="stats-view">
-            <i data-lucide="chart-column-big"></i>
-            <span>4. 통계화면</span>
+            <span class="menu-icon">📈</span><span>통계</span>
           </button>
           <button class="menu-btn" data-view="config-view">
-            <i data-lucide="settings"></i>
-            <span>5. 문의관리</span>
+            <span class="menu-icon">💬</span><span>FAQ 관리</span>
           </button>
           <button class="menu-btn" data-view="system-config-view">
-            <i data-lucide="sliders-horizontal"></i>
-            <span>6. System Config</span>
+            <span class="menu-icon">🔧</span><span>System Config</span>
           </button>
         </nav>
         <label class="language-box">
@@ -50,152 +46,208 @@
       </aside>
 
       <main>
+        <!-- Dashboard -->
         <section id="dashboard-view" class="view active">
           <section class="panel">
-            <h2>1. 대시보드</h2>
-            <p class="hero-copy">Event CRM 홈에서 행사 생성, CRM 운영, 통계, Config를 한 번에 관리하세요.</p>
-            <div id="event-meta" class="meta"></div>
-            <div class="actions">
-              <button class="menu-btn quick-nav" data-view="crm-view">CRM 바로가기</button>
-              <button class="menu-btn quick-nav" data-view="patient-view">환자현황 바로가기</button>
-              <button class="menu-btn quick-nav" data-view="stats-view">통계 바로가기</button>
-              <button class="menu-btn quick-nav" data-view="config-view">문의관리 바로가기</button>
+            <div class="panel-header">
+              <h2>대시보드</h2>
+              <div id="event-meta" class="meta-pill"></div>
             </div>
             <div class="dashboard-cards">
-              <article class="stat-card">
-                <h3>행사 수</h3>
-                <strong id="dashboard-events-count">0</strong>
+              <article class="stat-card stat-urgent">
+                <h3>🔴 답변 필요</h3>
+                <strong id="dashboard-needs-action">0</strong>
+                <small>신규+미응답+재접촉</small>
               </article>
               <article class="stat-card">
-                <h3>리드 수</h3>
+                <h3>👥 전체 리드</h3>
                 <strong id="dashboard-leads-count">0</strong>
+                <small>현재 행사 기준</small>
               </article>
               <article class="stat-card">
-                <h3>상담 진행중</h3>
+                <h3>💬 상담중</h3>
                 <strong id="dashboard-consulting-count">0</strong>
+                <small>응답 진행 중</small>
               </article>
+              <article class="stat-card">
+                <h3>✅ 예약 완료</h3>
+                <strong id="dashboard-booked-count">0</strong>
+                <small>END 단계</small>
+              </article>
+            </div>
+            <div class="stage-breakdown" id="stage-breakdown"></div>
+            <div class="actions" style="margin-top:16px;">
+              <button class="btn-secondary quick-nav" data-view="patient-view">→ 리드 현황 바로가기</button>
+              <button class="btn-secondary quick-nav" data-view="crm-view">→ 시트 설정</button>
             </div>
           </section>
         </section>
 
+        <!-- CRM Setup -->
         <section id="crm-view" class="view">
           <section class="panel">
-            <h2>2) 새로운 행사 입력</h2>
-        <form id="event-form">
-          <label>행사명
-            <input id="event-name" required placeholder="예: 카자흐스탄 4월 검진 이벤트" />
-          </label>
-          <label>국가
-            <input id="event-country" required placeholder="예: KZ" />
-          </label>
-          <label>관심 진료 기본값
-            <select id="default-service">
-              <option value="checkup">검진</option>
-              <option value="spine">척추</option>
-              <option value="intervention">인터벤션</option>
-            </select>
-          </label>
-          <button type="submit" data-i18n="save_event">행사 저장</button>
-        </form>
+            <h2>행사 등록</h2>
+            <form id="event-form">
+              <div class="form-row">
+                <label>행사명
+                  <input id="event-name" required placeholder="예: 일산병원 4월 검진" />
+                </label>
+                <label>국가
+                  <input id="event-country" required placeholder="예: KZ" />
+                </label>
+                <label>관심 진료 기본값
+                  <select id="default-service">
+                    <option value="checkup">검진</option>
+                    <option value="spine">척추</option>
+                    <option value="intervention">인터벤션</option>
+                  </select>
+                </label>
+              </div>
+              <button type="submit" data-i18n="save_event">행사 등록</button>
+            </form>
           </section>
 
           <section class="panel">
-            <h2>3) 구글시트 주소 입력</h2>
-        <form id="sheet-form">
-          <label>행사 선택
-            <select id="event-select"></select>
-          </label>
-          <label>Google Sheet URL
-            <input id="sheet-url" type="url" required placeholder="https://docs.google.com/spreadsheets/..." />
-          </label>
-          <label>Sheet Webhook URL (옵션, Apps Script 등)
-            <input id="sheet-webhook-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
-          </label>
-          <button type="submit" data-i18n="connect_sheet">시트 연결</button>
-        </form>
+            <div class="panel-header">
+              <h2>구글시트 연결 설정</h2>
+              <button id="delete-event-btn" type="button" class="btn-danger-soft">🗑 행사 삭제</button>
+            </div>
+            <form id="sheet-form">
+              <label>행사 선택
+                <select id="event-select"></select>
+              </label>
+              <label>Google Sheet URL
+                <input id="sheet-url" type="url" required placeholder="https://docs.google.com/spreadsheets/..." />
+              </label>
+              <label>Google API Key <small>(Sheets API 읽기용)</small>
+                <input id="google-api-key" type="password" placeholder="AIza..." autocomplete="off" />
+              </label>
+              <label>시트 탭 이름 <small>(기본값: 첫 번째 탭)</small>
+                <input id="sheet-name" placeholder="예: Instagram New" />
+              </label>
+              <label>Sheet Webhook URL <small>(옵션, Apps Script로 시트 쓰기)</small>
+                <input id="sheet-webhook-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
+              </label>
+              <div class="actions">
+                <button type="submit" data-i18n="connect_sheet">시트 설정 저장</button>
+                <button type="button" id="sheet-test-btn" class="btn-secondary">🔍 연결 테스트</button>
+              </div>
+            </form>
+            <pre id="sheet-test-result" class="result-box" style="display:none;"></pre>
           </section>
-
         </section>
 
+        <!-- Lead List -->
         <section id="patient-view" class="view">
           <section class="panel">
-            <h2>3) 환자 인입 현황</h2>
-            <div class="actions">
-              <button id="simulate-lead-btn" data-i18n="simulate_lead">테스트 리드 유입</button>
-              <button id="run-auto-reply-btn" data-i18n="run_auto_reply">자동응답 실행</button>
+            <div class="panel-header">
+              <h2>리드 / 환자 현황</h2>
+              <div class="actions">
+                <button id="import-sheet-btn">📥 시트에서 가져오기</button>
+                <button id="run-auto-reply-btn" data-i18n="run_auto_reply" class="btn-accent">🚀 신규 일괄 자동응답</button>
+                <button id="clear-leads-btn" type="button" class="btn-danger-soft">🧹 전체 비우기</button>
+              </div>
             </div>
-            <details>
-              <summary><strong>Instagram New 시트 행 인입(실데이터 형태)</strong></summary>
+            <div id="import-result" class="result-box" style="display:none;"></div>
+
+            <div class="lead-toolbar">
+              <input id="lead-search" type="search" placeholder="🔎 이름/전화/로그 검색..." />
+              <div class="stage-filter" id="stage-filter">
+                <button type="button" class="filter-btn active" data-filter="all">전체</button>
+                <button type="button" class="filter-btn" data-filter="needs_action">🔴 답변 필요</button>
+                <button type="button" class="filter-btn" data-filter="in_progress">🟢 진행중</button>
+                <button type="button" class="filter-btn" data-filter="done">⚫ 완료</button>
+              </div>
+            </div>
+
+            <details class="advanced-panel">
+              <summary>＋ Instagram New 시트 행 직접 입력 (수동 인입)</summary>
               <form id="instagram-ingest-form">
-                <label>created_time
-                  <input id="ig-created-time" placeholder="2026-04-01T20:54:53+05:00" />
-                </label>
-                <label>platform
-                  <input id="ig-platform" placeholder="ig / fb / M1" />
-                </label>
-                <label>phone_number
-                  <input id="ig-phone" placeholder="p:+77475789240" />
-                </label>
-                <label>full_name
-                  <input id="ig-full-name" placeholder="환자 이름" />
-                </label>
-                <label>lead_status
-                  <input id="ig-lead-status" placeholder="CREATED" />
-                </label>
+                <div class="form-row">
+                  <label>created_time
+                    <input id="ig-created-time" placeholder="2026-04-01T20:54:53+05:00" />
+                  </label>
+                  <label>platform
+                    <input id="ig-platform" placeholder="ig / fb / M1" />
+                  </label>
+                </div>
+                <div class="form-row">
+                  <label>phone_number
+                    <input id="ig-phone" placeholder="p:+77475789240" />
+                  </label>
+                  <label>full_name
+                    <input id="ig-full-name" placeholder="환자 이름" />
+                  </label>
+                  <label>lead_status
+                    <input id="ig-lead-status" placeholder="CREATED" />
+                  </label>
+                </div>
                 <div class="actions">
-                  <button type="submit">Instagram New 형식으로 인입</button>
-                  <button id="append-sheet-row-btn" type="button">신규행 추가 + CRM 인입</button>
+                  <button type="submit">CRM 인입</button>
+                  <button id="append-sheet-row-btn" type="button" class="btn-secondary">신규행 추가 + CRM 인입</button>
+                  <button id="simulate-lead-btn" type="button" class="btn-secondary" data-i18n="simulate_lead">테스트 리드</button>
                 </div>
               </form>
             </details>
+
+            <div id="lead-summary" class="lead-summary"></div>
             <div id="lead-list"></div>
           </section>
         </section>
 
+        <!-- Stats -->
         <section id="stats-view" class="view">
           <section class="panel">
-            <h2>3. 통계화면</h2>
-            <p class="meta">행사/리드 데이터를 기준으로 요약 통계를 확인합니다.</p>
+            <h2>통계</h2>
+            <p class="meta">현재 선택된 행사 기준 요약입니다.</p>
+            <div class="stage-breakdown" id="stats-stage-breakdown"></div>
             <ul id="stats-summary"></ul>
           </section>
         </section>
 
+        <!-- FAQ -->
         <section id="config-view" class="view">
           <section class="panel">
-            <h2>4. 문의관리 (행사별 FAQ 답변)</h2>
+            <h2>FAQ 관리 (행사별)</h2>
+            <p class="meta">FAQ 버튼은 리드 카드에 노출되어 1클릭 WhatsApp 발송에 사용됩니다. 행사별 최대 6개.</p>
             <form id="inquiry-form">
               <label>행사 선택
                 <select id="inquiry-event-select"></select>
               </label>
-              <label>FAQ 제목
-                <input id="faq-title" placeholder="예: 검진 안내" />
-              </label>
+              <div class="form-row">
+                <label>FAQ 제목
+                  <input id="faq-title" placeholder="예: 검진 안내" />
+                </label>
+              </div>
               <label>FAQ 메시지
-                <textarea id="faq-message" rows="3" placeholder="왓츠앱으로 보낼 예시 답변을 입력하세요."></textarea>
+                <textarea id="faq-message" rows="4" placeholder="WhatsApp으로 발송할 메시지 본문"></textarea>
               </label>
               <button type="submit">FAQ 추가</button>
             </form>
-            <p class="meta">FAQ는 행사별 최대 6개까지 생성됩니다.</p>
             <ul id="faq-list" class="faq-list"></ul>
           </section>
         </section>
 
+        <!-- System Config -->
         <section id="system-config-view" class="view">
           <section class="panel">
-            <h2 data-i18n="config_menu">5. System Config (상태/규칙)</h2>
+            <h2 data-i18n="config_menu">System Config</h2>
+            <p class="meta">시트의 lead_status 컬럼이 어떤 값일 때 어느 단계로 매핑할지 정의합니다.</p>
             <form id="config-form">
               <label>행사 선택
                 <select id="config-event-select"></select>
               </label>
-              <label>created 상태값
-                <input id="cfg-created-status" placeholder="CREATED" />
-              </label>
-              <label>consulting 상태값(쉼표구분)
-                <input id="cfg-consulting-values" placeholder="IN_PROGRESS,상담 중" />
-              </label>
-              <label>전화번호 prefix 제거값
-                <input id="cfg-phone-prefix" placeholder="p:" />
-              </label>
+              <div class="form-row">
+                <label>created 상태값
+                  <input id="cfg-created-status" placeholder="CREATED" />
+                </label>
+                <label>consulting 상태값 <small>(쉼표 구분)</small>
+                  <input id="cfg-consulting-values" placeholder="IN_PROGRESS,상담 중" />
+                </label>
+                <label>전화번호 prefix 제거
+                  <input id="cfg-phone-prefix" placeholder="p:" />
+                </label>
+              </div>
               <button type="submit" data-i18n="save_config">Config 저장</button>
             </form>
           </section>
@@ -205,12 +257,14 @@
 
     <template id="lead-template">
       <article class="lead-card">
-        <header>
-          <strong class="lead-name"></strong>
-          <span class="lead-stage"></span>
-        </header>
-        <p class="lead-meta"></p>
-        <label>상태
+        <div class="lead-main">
+          <div class="lead-info">
+            <div class="lead-row-1">
+              <strong class="lead-name"></strong>
+              <span class="lead-stage"></span>
+            </div>
+            <p class="lead-meta"></p>
+          </div>
           <select class="stage-select">
             <option value="new_lead">신규 리드</option>
             <option value="auto_replied">자동응답 완료</option>
@@ -220,16 +274,12 @@
             <option value="no_response">미응답</option>
             <option value="recontact_needed">재접촉 필요</option>
           </select>
-        </label>
-        <div class="faq-buttons"></div>
-        <div class="whatsapp-box">
-          <small>FAQ 버튼 클릭 시 왓츠앱 메시지가 즉시 발송됩니다.</small>
         </div>
+        <div class="faq-buttons"></div>
         <div class="log"></div>
       </article>
     </template>
 
-    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
   </body>
 </html>

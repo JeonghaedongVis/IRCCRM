@@ -12,12 +12,10 @@
 
 ## 2) 현실적인 BEST 조합 (권장 스택)
 
-### A안: **HubSpot + Make + WhatsApp Cloud API + 카카오 알림톡 공급사** (권장)
+### A안: **HubSpot + Make + WhatsApp Cloud API** (권장)
 - **CRM:** HubSpot Sales/Service Hub
 - **자동화 오케스트레이션:** Make
-- **채널:**
-  - 해외/글로벌: WhatsApp Business Platform(Cloud API)
-  - 한국: 카카오 비즈메시지(알림톡/친구톡, 공식 공급사 경유)
+- **채널:** WhatsApp Business Platform(Cloud API)
 - **입력 소스:** Google Form/Google Sheet, Meta Lead Ads
 - **이유:**
   - 운영자가 쓰기 쉬운 UI + 파이프라인 보드 + 기본 리포트
@@ -120,7 +118,6 @@ Instagram Lead Ads / Google Form
         ↓
 Messaging Layer
 - WhatsApp Cloud API
-- Kakao BizMessage provider API
         ↓
 Ops Alerts
 - Slack/Email/Telegram
@@ -265,7 +262,7 @@ Ops Alerts
 ---
 
 ## 12) 리스크와 대응
-- **카카오/WhatsApp 템플릿 승인 지연** → 이벤트 전 최소 1주 승인 완료
+- **WhatsApp 템플릿 승인 지연** → 이벤트 전 최소 1주 승인 완료
 - **시트 컬럼 변경** → 매핑 테이블로 흡수
 - **중복 리드 폭증** → 전화번호 정규화 + dedupe 룰
 - **담당자 편중** → 라운드로빈 + 재분배 배치
@@ -294,6 +291,6 @@ Ops Alerts
 ---
 
 ## 15) 결론
-가장 현실적인 시작점은 **HubSpot + Make + (WhatsApp Cloud API + 카카오 비즈메시지 공급사)** 조합입니다.
+가장 현실적인 시작점은 **HubSpot + Make + WhatsApp Cloud API** 조합입니다.
 핵심은 “툴”보다 **매핑 레이어 + 버튼형 표준 응대 + SLA 관제**를 먼저 고정하는 것입니다.
 이 3가지를 먼저 만들면 행사/국가가 바뀌어도 반복 가능한 운영 시스템이 됩니다.
