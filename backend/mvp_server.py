@@ -43,7 +43,7 @@ def fetch_sheet_rows(sheet_id: str, api_key: str, sheet_name: str = "") -> list[
     return rows
 
 
-STAGE_TO_STATUS: dict[str, str] = {
+DEFAULT_STAGE_STATUS: dict[str, str] = {
     "new_lead":         "CREATED",
     "auto_replied":     "AUTOANSWER",
     "consulting":       "ANSWER",
@@ -52,6 +52,37 @@ STAGE_TO_STATUS: dict[str, str] = {
     "no_response":      "NO_RESPONSE",
     "recontact_needed": "RECONTACT",
 }
+
+
+def event_stage_status_map(event: dict) -> dict[str, str]:
+    """이벤트별 단계→상태값 매핑 (커스텀 우선, 미설정시 기본값)."""
+    cfg = (event or {}).get("config", {})
+    custom = cfg.get("stageStatusMap", {}) or {}
+    merged = {**DEFAULT_STAGE_STATUS}
+    for k, v in custom.items():
+        if isinstance(v, str) and v.strip():
+            merged[k] = v.strip()
+    return merged
+
+
+def status_for_stage(event: dict, stage: str) -> str:
+    return event_stage_status_map(event).get(stage, DEFAULT_STAGE_STATUS.get(stage, "CREATED"))
+
+
+def stage_for_status(event: dict, lead_status: str) -> str:
+    """시트의 lead_status 값을 CRM 단계로 역매핑."""
+    if not lead_status:
+        return "new_lead"
+    upper = lead_status.strip().upper()
+    smap = event_stage_status_map(event)
+    for stage, status in smap.items():
+        if status.strip().upper() == upper:
+            return stage
+    cfg = (event or {}).get("config", {})
+    consulting_alts = cfg.get("statusConfig", {}).get("consulting", []) or []
+    if lead_status in consulting_alts:
+        return "consulting"
+    return "new_lead"
 
 
 def now_iso() -> str:
@@ -128,18 +159,11 @@ def save_sheet_rows(rows: list) -> None:
 def create_lead_from_instagram_row(db: dict, event: dict, body: dict) -> dict:
     created_time = body.get("created_time") or now_iso()
     cfg = event.get("config", {})
-    status_cfg = cfg.get("statusConfig", {})
     phone_prefix = cfg.get("phonePrefixToStrip", "p:")
-    created_status = status_cfg.get("created", "CREATED")
-    consulting_values = status_cfg.get("consulting", ["IN_PROGRESS", "상담 중"])
     phone = normalize_phone(body.get("phone_number", ""), phone_prefix)
     platform = normalize_platform(body.get("platform", ""))
-    lead_status = (body.get("lead_status") or "CREATED").strip()
-    stage = (
-        "new_lead"
-        if lead_status.upper() == str(created_status).upper()
-        else ("consulting" if lead_status in consulting_values else "consulting")
-    )
+    lead_status = (body.get("lead_status") or status_for_stage(event, "new_lead")).strip()
+    stage = stage_for_status(event, lead_status)
     lead = {
         "id": str(uuid.uuid4()),
         "eventId": event["id"],
@@ -150,7 +174,7 @@ def create_lead_from_instagram_row(db: dict, event: dict, body: dict) -> dict:
         "createdAt": created_time,
         "platform": platform,
         "lead_status": lead_status,
-        "log": f"Instagram New 인입({platform}) status={lead_status}",
+        "log": f"인입({platform}) status={lead_status} → stage={stage}",
     }
     db["leads"].append(lead)
     return lead
@@ -201,7 +225,7 @@ class Handler(SimpleHTTPRequestHandler):
             db = load_db()
             leads = [l for l in db["leads"] if l["eventId"] == event_id]
             stage_counts: dict[str, int] = {}
-            for stage in STAGE_TO_STATUS.keys():
+            for stage in DEFAULT_STAGE_STATUS.keys():
                 stage_counts[stage] = 0
             for l in leads:
                 s = l.get("stage", "new_lead")
@@ -275,6 +299,10 @@ class Handler(SimpleHTTPRequestHandler):
 
         if path.startswith("/api/events/") and path.endswith("/leads"):
             event_id = path.split("/")[3]
+            event = next((e for e in db["events"] if e["id"] == event_id), None)
+            if event and event.get("archived"):
+                self._send_json(403, {"error": "event archived"})
+                return
             before = len(db["leads"])
             db["leads"] = [l for l in db["leads"] if l["eventId"] != event_id]
             removed = before - len(db["leads"])
@@ -284,6 +312,10 @@ class Handler(SimpleHTTPRequestHandler):
 
         if path.startswith("/api/events/") and len(path.split("/")) == 4:
             event_id = path.split("/")[3]
+            event = next((e for e in db["events"] if e["id"] == event_id), None)
+            if event and event.get("archived"):
+                self._send_json(403, {"error": "event archived (unarchive first)"})
+                return
             before_e = len(db["events"])
             db["events"] = [e for e in db["events"] if e["id"] != event_id]
             db["leads"] = [l for l in db["leads"] if l["eventId"] != event_id]
@@ -311,6 +343,7 @@ class Handler(SimpleHTTPRequestHandler):
                 "defaultService": body.get("defaultService", "checkup"),
                 "sheetUrl": "",
                 "sheetWebhookUrl": "",
+                "archived": False,
                 "config": {
                     "phonePrefixToStrip": "p:",
                     "statusConfig": {"created": "CREATED", "consulting": ["IN_PROGRESS", "상담 중"]},
@@ -364,7 +397,26 @@ class Handler(SimpleHTTPRequestHandler):
                         merged["statusConfig"] = {**current.get("statusConfig", {}), **body["statusConfig"]}
                     if "replyTemplates" in body:
                         merged["replyTemplates"] = {**current.get("replyTemplates", {}), **body["replyTemplates"]}
+                    if "stageStatusMap" in body:
+                        merged["stageStatusMap"] = {**current.get("stageStatusMap", {}), **body["stageStatusMap"]}
                     e["config"] = merged
+                    save_db(db)
+                    self._send_json(200, e)
+                    return
+            self._not_found()
+            return
+
+        if path.startswith("/api/events/") and path.endswith("/archive"):
+            event_id = path.split("/")[3]
+            body = self._read_json()
+            archived = bool(body.get("archived", True))
+            for e in db["events"]:
+                if e["id"] == event_id:
+                    e["archived"] = archived
+                    if archived:
+                        e["archivedAt"] = now_iso()
+                    else:
+                        e.pop("archivedAt", None)
                     save_db(db)
                     self._send_json(200, e)
                     return
@@ -376,6 +428,9 @@ class Handler(SimpleHTTPRequestHandler):
             event = next((e for e in db["events"] if e["id"] == event_id), None)
             if not event:
                 self._not_found()
+                return
+            if event.get("archived"):
+                self._send_json(403, {"error": "event archived"})
                 return
             lead = {
                 "id": str(uuid.uuid4()),
@@ -399,6 +454,9 @@ class Handler(SimpleHTTPRequestHandler):
             if not event:
                 self._not_found()
                 return
+            if event.get("archived"):
+                self._send_json(403, {"error": "event archived"})
+                return
             lead = create_lead_from_instagram_row(db, event, body)
             save_db(db)
             self._send_json(201, lead)
@@ -410,6 +468,9 @@ class Handler(SimpleHTTPRequestHandler):
             event = next((e for e in db["events"] if e["id"] == event_id), None)
             if not event:
                 self._not_found()
+                return
+            if event.get("archived"):
+                self._send_json(403, {"error": "event archived"})
                 return
 
             # 1) 신규행 저장(시트 모의 저장소)
@@ -459,6 +520,9 @@ class Handler(SimpleHTTPRequestHandler):
             if not event:
                 self._not_found()
                 return
+            if event.get("archived"):
+                self._send_json(403, {"error": "event archived"})
+                return
             cfg = event.get("config", {})
             api_key = body.get("apiKey", "").strip() or cfg.get("googleApiKey", "").strip()
             if not api_key:
@@ -501,14 +565,18 @@ class Handler(SimpleHTTPRequestHandler):
             lead_id = path.split("/")[3]
             for lead in db["leads"]:
                 if lead["id"] == lead_id:
+                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
+                    if event and event.get("archived"):
+                        self._send_json(403, {"error": "event archived"})
+                        return
                     new_stage = "auto_replied"
-                    new_status = STAGE_TO_STATUS[new_stage]
+                    new_status = status_for_stage(event, new_stage)
                     lead["stage"] = new_stage
                     lead["lead_status"] = new_status
-                    lead["log"] = f"자동응답 실행 완료 → {new_status}"
+                    sheet_result = push_status_to_sheet(event, lead, new_status)
+                    lead["log"] = f"자동응답 → {new_status} · sheet={sheet_result}"
+                    lead["sheetWriteback"] = sheet_result
                     save_db(db)
-                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
-                    push_status_to_sheet(event, lead, new_status)
                     self._send_json(200, lead)
                     return
             self._not_found()
@@ -520,14 +588,18 @@ class Handler(SimpleHTTPRequestHandler):
             action = body.get("action", "")
             for lead in db["leads"]:
                 if lead["id"] == lead_id:
+                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
+                    if event and event.get("archived"):
+                        self._send_json(403, {"error": "event archived"})
+                        return
                     new_stage = "booking_push" if action == "btn_booking_push" else "consulting"
-                    new_status = STAGE_TO_STATUS[new_stage]
+                    new_status = status_for_stage(event, new_stage)
                     lead["stage"] = new_stage
                     lead["lead_status"] = new_status
-                    lead["log"] = f"문의응답선택: {action} → {new_status}"
+                    sheet_result = push_status_to_sheet(event, lead, new_status)
+                    lead["log"] = f"응답선택 {action} → {new_status} · sheet={sheet_result}"
+                    lead["sheetWriteback"] = sheet_result
                     save_db(db)
-                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
-                    push_status_to_sheet(event, lead, new_status)
                     self._send_json(200, lead)
                     return
             self._not_found()
@@ -539,13 +611,17 @@ class Handler(SimpleHTTPRequestHandler):
             new_stage = body.get("stage", "new_lead")
             for lead in db["leads"]:
                 if lead["id"] == lead_id:
-                    new_status = STAGE_TO_STATUS.get(new_stage, "CREATED")
+                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
+                    if event and event.get("archived"):
+                        self._send_json(403, {"error": "event archived"})
+                        return
+                    new_status = status_for_stage(event, new_stage)
                     lead["stage"] = new_stage
                     lead["lead_status"] = new_status
-                    lead["log"] = f"상태 변경: {new_stage} → {new_status}"
+                    sheet_result = push_status_to_sheet(event, lead, new_status)
+                    lead["log"] = f"단계변경 {new_stage} → {new_status} · sheet={sheet_result}"
+                    lead["sheetWriteback"] = sheet_result
                     save_db(db)
-                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
-                    push_status_to_sheet(event, lead, new_status)
                     self._send_json(200, lead)
                     return
             self._not_found()
@@ -561,15 +637,19 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             for lead in db["leads"]:
                 if lead["id"] == lead_id:
+                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
+                    if event and event.get("archived"):
+                        self._send_json(403, {"error": "event archived"})
+                        return
                     new_stage = "consulting"
-                    new_status = STAGE_TO_STATUS[new_stage]
+                    new_status = status_for_stage(event, new_stage)
                     lead["stage"] = new_stage
                     lead["lead_status"] = new_status
-                    lead["log"] = f"WhatsApp 발송: [{title}] {message[:80]} → {new_status}"
+                    sheet_result = push_status_to_sheet(event, lead, new_status)
+                    lead["log"] = f"WhatsApp [{title}] → {new_status} · sheet={sheet_result}"
+                    lead["sheetWriteback"] = sheet_result
                     save_db(db)
-                    event = next((e for e in db["events"] if e["id"] == lead["eventId"]), None)
-                    push_status_to_sheet(event, lead, new_status)
-                    self._send_json(200, {"status": "sent", "lead": lead})
+                    self._send_json(200, {"status": "sent", "sheetWriteback": sheet_result, "lead": lead})
                     return
             self._not_found()
             return

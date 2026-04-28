@@ -11,30 +11,43 @@
 
     <div class="app-shell">
       <aside class="sidebar">
-        <div>
-          <h1 data-i18n="title">Event CRM</h1>
-          <p data-i18n="subtitle">행사 → 시트 연결 → 자동응답 → 상담</p>
+        <div class="brand">
+          <div class="brand-mark"><i data-lucide="activity"></i></div>
+          <div>
+            <h1 data-i18n="title">Event CRM</h1>
+            <p data-i18n="subtitle">행사 · 시트 · 자동응답</p>
+          </div>
         </div>
+
         <nav class="menu">
           <button class="menu-btn active" data-view="dashboard-view">
-            <span class="menu-icon">📊</span><span>대시보드</span>
+            <i data-lucide="layout-dashboard"></i><span data-i18n="nav_dashboard">대시보드</span>
           </button>
           <button class="menu-btn" data-view="crm-view">
-            <span class="menu-icon">⚙️</span><span>행사 / 시트 연결</span>
+            <i data-lucide="link"></i><span data-i18n="nav_crm">행사 / 시트 연결</span>
           </button>
           <button class="menu-btn" data-view="patient-view">
-            <span class="menu-icon">👥</span><span>리드 / 환자 현황</span>
+            <i data-lucide="users"></i><span data-i18n="nav_leads">리드 현황</span>
           </button>
           <button class="menu-btn" data-view="stats-view">
-            <span class="menu-icon">📈</span><span>통계</span>
+            <i data-lucide="bar-chart-3"></i><span data-i18n="nav_stats">통계</span>
           </button>
-          <button class="menu-btn" data-view="config-view">
-            <span class="menu-icon">💬</span><span>FAQ 관리</span>
-          </button>
-          <button class="menu-btn" data-view="system-config-view">
-            <span class="menu-icon">🔧</span><span>System Config</span>
-          </button>
+          <div class="menu-group" id="settings-group">
+            <button class="menu-btn menu-parent" id="settings-toggle" type="button">
+              <i data-lucide="settings"></i><span data-i18n="nav_settings">설정</span>
+              <i data-lucide="chevron-down" class="menu-caret"></i>
+            </button>
+            <div class="submenu">
+              <button class="menu-btn menu-sub" data-view="system-config-view">
+                <i data-lucide="sliders-horizontal"></i><span data-i18n="nav_event_settings">행사 세부 설정</span>
+              </button>
+              <button class="menu-btn menu-sub" data-view="config-view">
+                <i data-lucide="message-square-text"></i><span data-i18n="nav_faq_settings">FAQ 설정</span>
+              </button>
+            </div>
+          </div>
         </nav>
+
         <label class="language-box">
           <span data-i18n="language">언어</span>
           <select id="ui-language">
@@ -48,89 +61,142 @@
       <main>
         <!-- Dashboard -->
         <section id="dashboard-view" class="view active">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_dashboard_title">대시보드</h2>
+              <p class="page-sub" data-i18n="page_dashboard_sub">현재 행사의 핵심 지표를 한눈에 확인합니다.</p>
+            </div>
+            <div id="event-meta" class="event-pill"></div>
+          </header>
+
+          <section class="dashboard-cards">
+            <article class="stat-card stat-urgent">
+              <div class="stat-card-icon"><i data-lucide="bell-ring"></i></div>
+              <div class="stat-card-body">
+                <span class="stat-label" data-i18n="stat_needs_action">답변 필요</span>
+                <strong id="dashboard-needs-action">0</strong>
+                <span class="stat-foot" data-i18n="stat_needs_action_sub">신규 + 미응답 + 재접촉</span>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card-icon"><i data-lucide="users"></i></div>
+              <div class="stat-card-body">
+                <span class="stat-label" data-i18n="stat_total">전체 리드</span>
+                <strong id="dashboard-leads-count">0</strong>
+                <span class="stat-foot" data-i18n="stat_total_sub">현재 행사 기준</span>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card-icon"><i data-lucide="messages-square"></i></div>
+              <div class="stat-card-body">
+                <span class="stat-label" data-i18n="stat_inprogress">진행중</span>
+                <strong id="dashboard-consulting-count">0</strong>
+                <span class="stat-foot" data-i18n="stat_inprogress_sub">자동응답·상담·예약유도</span>
+              </div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-card-icon"><i data-lucide="calendar-check"></i></div>
+              <div class="stat-card-body">
+                <span class="stat-label" data-i18n="stat_booked">예약 완료</span>
+                <strong id="dashboard-booked-count">0</strong>
+                <span class="stat-foot" data-i18n="stat_booked_sub">END 단계</span>
+              </div>
+            </article>
+          </section>
+
           <section class="panel">
             <div class="panel-header">
-              <h2>대시보드</h2>
-              <div id="event-meta" class="meta-pill"></div>
-            </div>
-            <div class="dashboard-cards">
-              <article class="stat-card stat-urgent">
-                <h3>🔴 답변 필요</h3>
-                <strong id="dashboard-needs-action">0</strong>
-                <small>신규+미응답+재접촉</small>
-              </article>
-              <article class="stat-card">
-                <h3>👥 전체 리드</h3>
-                <strong id="dashboard-leads-count">0</strong>
-                <small>현재 행사 기준</small>
-              </article>
-              <article class="stat-card">
-                <h3>💬 상담중</h3>
-                <strong id="dashboard-consulting-count">0</strong>
-                <small>응답 진행 중</small>
-              </article>
-              <article class="stat-card">
-                <h3>✅ 예약 완료</h3>
-                <strong id="dashboard-booked-count">0</strong>
-                <small>END 단계</small>
-              </article>
+              <h3 data-i18n="breakdown_title">단계별 분포</h3>
+              <span class="meta" data-i18n="breakdown_sub">총 7개 단계</span>
             </div>
             <div class="stage-breakdown" id="stage-breakdown"></div>
-            <div class="actions" style="margin-top:16px;">
-              <button class="btn-secondary quick-nav" data-view="patient-view">→ 리드 현황 바로가기</button>
-              <button class="btn-secondary quick-nav" data-view="crm-view">→ 시트 설정</button>
-            </div>
+          </section>
+
+          <section class="quick-actions">
+            <button class="btn-ghost quick-nav" data-view="patient-view">
+              <i data-lucide="users"></i><span data-i18n="quick_leads">리드 현황 바로가기</span>
+            </button>
+            <button class="btn-ghost quick-nav" data-view="crm-view">
+              <i data-lucide="settings-2"></i><span data-i18n="quick_sheet">시트 설정</span>
+            </button>
+            <button class="btn-ghost quick-nav" data-view="config-view">
+              <i data-lucide="message-square-text"></i><span data-i18n="quick_faq">FAQ 관리</span>
+            </button>
           </section>
         </section>
 
         <!-- CRM Setup -->
         <section id="crm-view" class="view">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_crm_title">행사 / 시트 연결</h2>
+              <p class="page-sub" data-i18n="page_crm_sub">행사 등록 → 구글시트 연결 → API 키 입력 후 저장합니다.</p>
+            </div>
+          </header>
+
           <section class="panel">
-            <h2>행사 등록</h2>
+            <div class="panel-header">
+              <h3><i data-lucide="plus-circle"></i> <span data-i18n="panel_event_register">행사 등록</span></h3>
+            </div>
             <form id="event-form">
               <div class="form-row">
-                <label>행사명
-                  <input id="event-name" required placeholder="예: 일산병원 4월 검진" />
+                <label><span data-i18n="form_event_name">행사명</span>
+                  <input id="event-name" required data-i18n-ph="form_event_name_ph" placeholder="예: 일산병원 4월 검진" />
                 </label>
-                <label>국가
-                  <input id="event-country" required placeholder="예: KZ" />
+                <label><span data-i18n="form_country">국가</span>
+                  <input id="event-country" required data-i18n-ph="form_country_ph" placeholder="예: KZ" />
                 </label>
-                <label>관심 진료 기본값
+                <label><span data-i18n="form_default_service">관심 진료 기본값</span>
                   <select id="default-service">
-                    <option value="checkup">검진</option>
-                    <option value="spine">척추</option>
-                    <option value="intervention">인터벤션</option>
+                    <option value="checkup" data-i18n="service_checkup">검진</option>
+                    <option value="spine" data-i18n="service_spine">척추</option>
+                    <option value="intervention" data-i18n="service_intervention">인터벤션</option>
                   </select>
                 </label>
               </div>
-              <button type="submit" data-i18n="save_event">행사 등록</button>
+              <div class="actions">
+                <button type="submit" data-i18n="btn_save_event">행사 등록</button>
+              </div>
             </form>
           </section>
 
           <section class="panel">
             <div class="panel-header">
-              <h2>구글시트 연결 설정</h2>
-              <button id="delete-event-btn" type="button" class="btn-danger-soft">🗑 행사 삭제</button>
+              <h3><i data-lucide="link"></i> <span data-i18n="panel_sheet_config">구글시트 연결 설정</span></h3>
+              <div class="actions">
+                <button id="archive-event-btn" type="button" class="btn-secondary">
+                  <i data-lucide="archive"></i><span id="archive-event-label" data-i18n="btn_archive_event">행사 종료</span>
+                </button>
+                <button id="delete-event-btn" type="button" class="btn-danger-ghost">
+                  <i data-lucide="trash-2"></i><span data-i18n="btn_delete_event">행사 삭제</span>
+                </button>
+              </div>
             </div>
             <form id="sheet-form">
-              <label>행사 선택
+              <label><span data-i18n="form_event_select">행사 선택</span>
                 <select id="event-select"></select>
               </label>
-              <label>Google Sheet URL
+              <label><span data-i18n="form_sheet_url">Google Sheet URL</span>
                 <input id="sheet-url" type="url" required placeholder="https://docs.google.com/spreadsheets/..." />
               </label>
-              <label>Google API Key <small>(Sheets API 읽기용)</small>
-                <input id="google-api-key" type="password" placeholder="AIza..." autocomplete="off" />
-              </label>
-              <label>시트 탭 이름 <small>(기본값: 첫 번째 탭)</small>
-                <input id="sheet-name" placeholder="예: Instagram New" />
-              </label>
-              <label>Sheet Webhook URL <small>(옵션, Apps Script로 시트 쓰기)</small>
+              <div class="form-row">
+                <label><span data-i18n="form_api_key">Google API Key</span> <small data-i18n="form_api_key_hint">Sheets API 읽기용</small>
+                  <input id="google-api-key" type="password" placeholder="AIza..." autocomplete="off" />
+                </label>
+                <label><span data-i18n="form_sheet_name">시트 탭 이름</span> <small data-i18n="form_sheet_name_hint">비우면 첫 번째 탭</small>
+                  <input id="sheet-name" placeholder="Instagram New" />
+                </label>
+              </div>
+              <label><span data-i18n="form_webhook_url">Sheet Webhook URL</span> <small data-i18n="form_webhook_url_hint">Apps Script로 시트에 쓰기 (선택)</small>
                 <input id="sheet-webhook-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" />
               </label>
               <div class="actions">
-                <button type="submit" data-i18n="connect_sheet">시트 설정 저장</button>
-                <button type="button" id="sheet-test-btn" class="btn-secondary">🔍 연결 테스트</button>
+                <button type="submit">
+                  <i data-lucide="save"></i><span data-i18n="btn_save_sheet">시트 설정 저장</span>
+                </button>
+                <button type="button" id="sheet-test-btn" class="btn-secondary">
+                  <i data-lucide="plug-zap"></i><span data-i18n="btn_test_connection">연결 테스트</span>
+                </button>
               </div>
             </form>
             <pre id="sheet-test-result" class="result-box" style="display:none;"></pre>
@@ -139,29 +205,56 @@
 
         <!-- Lead List -->
         <section id="patient-view" class="view">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_leads_title">리드 현황</h2>
+              <p class="page-sub" data-i18n="page_leads_sub">답변이 필요한 리드가 항상 최상단에 표시됩니다.</p>
+            </div>
+          </header>
+
           <section class="panel">
             <div class="panel-header">
-              <h2>리드 / 환자 현황</h2>
+              <h3><i data-lucide="users"></i> <span data-i18n="panel_lead_list">리드 목록</span></h3>
               <div class="actions">
-                <button id="import-sheet-btn">📥 시트에서 가져오기</button>
-                <button id="run-auto-reply-btn" data-i18n="run_auto_reply" class="btn-accent">🚀 신규 일괄 자동응답</button>
-                <button id="clear-leads-btn" type="button" class="btn-danger-soft">🧹 전체 비우기</button>
+                <button id="import-sheet-btn">
+                  <i data-lucide="download"></i><span data-i18n="btn_import_sheet">시트에서 가져오기</span>
+                </button>
+                <button id="run-auto-reply-btn" class="btn-accent">
+                  <i data-lucide="zap"></i><span data-i18n="btn_run_auto_reply">신규 일괄 자동응답</span>
+                </button>
+                <button id="clear-leads-btn" type="button" class="btn-danger-ghost">
+                  <i data-lucide="trash-2"></i><span data-i18n="btn_clear_leads">전체 비우기</span>
+                </button>
               </div>
             </div>
             <div id="import-result" class="result-box" style="display:none;"></div>
 
             <div class="lead-toolbar">
-              <input id="lead-search" type="search" placeholder="🔎 이름/전화/로그 검색..." />
+              <div class="search-box">
+                <i data-lucide="search"></i>
+                <input id="lead-search" type="search" data-i18n-ph="search_ph" placeholder="이름·전화·로그 검색..." />
+              </div>
               <div class="stage-filter" id="stage-filter">
-                <button type="button" class="filter-btn active" data-filter="all">전체</button>
-                <button type="button" class="filter-btn" data-filter="needs_action">🔴 답변 필요</button>
-                <button type="button" class="filter-btn" data-filter="in_progress">🟢 진행중</button>
-                <button type="button" class="filter-btn" data-filter="done">⚫ 완료</button>
+                <button type="button" class="filter-btn active" data-filter="all">
+                  <i data-lucide="list"></i><span data-i18n="filter_all">전체</span>
+                </button>
+                <button type="button" class="filter-btn" data-filter="needs_action">
+                  <i data-lucide="alert-circle"></i><span data-i18n="filter_needs_action">답변 필요</span>
+                </button>
+                <button type="button" class="filter-btn" data-filter="in_progress">
+                  <i data-lucide="activity"></i><span data-i18n="filter_in_progress">진행중</span>
+                </button>
+                <button type="button" class="filter-btn" data-filter="done">
+                  <i data-lucide="check-circle-2"></i><span data-i18n="filter_done">완료</span>
+                </button>
               </div>
             </div>
 
             <details class="advanced-panel">
-              <summary>＋ Instagram New 시트 행 직접 입력 (수동 인입)</summary>
+              <summary>
+                <i data-lucide="chevron-right" class="summary-chevron"></i>
+                <span data-i18n="advanced_manual">수동 인입 (Instagram New 시트 행 직접 입력)</span>
+              </summary>
               <form id="instagram-ingest-form">
                 <div class="form-row">
                   <label>created_time
@@ -170,22 +263,26 @@
                   <label>platform
                     <input id="ig-platform" placeholder="ig / fb / M1" />
                   </label>
+                  <label>lead_status
+                    <input id="ig-lead-status" placeholder="CREATED" />
+                  </label>
                 </div>
                 <div class="form-row">
                   <label>phone_number
                     <input id="ig-phone" placeholder="p:+77475789240" />
                   </label>
                   <label>full_name
-                    <input id="ig-full-name" placeholder="환자 이름" />
-                  </label>
-                  <label>lead_status
-                    <input id="ig-lead-status" placeholder="CREATED" />
+                    <input id="ig-full-name" placeholder="—" />
                   </label>
                 </div>
                 <div class="actions">
-                  <button type="submit">CRM 인입</button>
-                  <button id="append-sheet-row-btn" type="button" class="btn-secondary">신규행 추가 + CRM 인입</button>
-                  <button id="simulate-lead-btn" type="button" class="btn-secondary" data-i18n="simulate_lead">테스트 리드</button>
+                  <button type="submit"><i data-lucide="user-plus"></i><span data-i18n="btn_crm_ingest">CRM 인입</span></button>
+                  <button id="append-sheet-row-btn" type="button" class="btn-secondary">
+                    <i data-lucide="file-plus"></i><span data-i18n="btn_append_row">신규행 + 인입</span>
+                  </button>
+                  <button id="simulate-lead-btn" type="button" class="btn-secondary">
+                    <i data-lucide="flask-conical"></i><span data-i18n="btn_test_lead">테스트 리드</span>
+                  </button>
                 </div>
               </form>
             </details>
@@ -197,58 +294,129 @@
 
         <!-- Stats -->
         <section id="stats-view" class="view">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_stats_title">통계</h2>
+              <p class="page-sub" data-i18n="page_stats_sub">현재 선택된 행사 기준 요약 지표입니다.</p>
+            </div>
+          </header>
           <section class="panel">
-            <h2>통계</h2>
-            <p class="meta">현재 선택된 행사 기준 요약입니다.</p>
+            <div class="panel-header"><h3 data-i18n="panel_stage_dist">단계별 분포</h3></div>
             <div class="stage-breakdown" id="stats-stage-breakdown"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h3 data-i18n="summary_title">요약</h3></div>
             <ul id="stats-summary"></ul>
           </section>
         </section>
 
         <!-- FAQ -->
         <section id="config-view" class="view">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_faq_title">FAQ 관리</h2>
+              <p class="page-sub" data-i18n="page_faq_sub">FAQ 버튼은 리드 카드에 노출되어 1클릭 WhatsApp 발송에 사용됩니다. (행사별 최대 6개)</p>
+            </div>
+          </header>
           <section class="panel">
-            <h2>FAQ 관리 (행사별)</h2>
-            <p class="meta">FAQ 버튼은 리드 카드에 노출되어 1클릭 WhatsApp 발송에 사용됩니다. 행사별 최대 6개.</p>
+            <div class="panel-header">
+              <h3><i data-lucide="plus-circle"></i> <span data-i18n="panel_faq_add">FAQ 추가</span></h3>
+            </div>
             <form id="inquiry-form">
-              <label>행사 선택
-                <select id="inquiry-event-select"></select>
-              </label>
               <div class="form-row">
-                <label>FAQ 제목
-                  <input id="faq-title" placeholder="예: 검진 안내" />
+                <label><span data-i18n="form_event_select">행사 선택</span>
+                  <select id="inquiry-event-select"></select>
+                </label>
+                <label><span data-i18n="form_faq_title">FAQ 제목</span>
+                  <input id="faq-title" data-i18n-ph="form_faq_title_ph" placeholder="예: 검진 안내" />
                 </label>
               </div>
-              <label>FAQ 메시지
-                <textarea id="faq-message" rows="4" placeholder="WhatsApp으로 발송할 메시지 본문"></textarea>
+              <label><span data-i18n="form_faq_message">FAQ 메시지</span>
+                <textarea id="faq-message" rows="4" data-i18n-ph="form_faq_message_ph" placeholder="WhatsApp으로 발송할 메시지 본문"></textarea>
               </label>
-              <button type="submit">FAQ 추가</button>
+              <div class="actions">
+                <button type="submit"><i data-lucide="plus"></i><span data-i18n="btn_faq_add">FAQ 추가</span></button>
+              </div>
             </form>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><h3 data-i18n="panel_faq_registered">등록된 FAQ</h3></div>
             <ul id="faq-list" class="faq-list"></ul>
           </section>
         </section>
 
-        <!-- System Config -->
+        <!-- Event Detail Settings (구 System Config) -->
         <section id="system-config-view" class="view">
+          <header class="page-header">
+            <div>
+              <h2 data-i18n="page_event_settings_title">행사 세부 설정</h2>
+              <p class="page-sub" data-i18n="page_event_settings_sub">시트의 lead_status 값과 CRM 단계 사이의 매핑을 정의합니다. CRM에서 단계를 변경하면 여기 설정된 값이 시트로 다시 기록됩니다.</p>
+            </div>
+          </header>
+
           <section class="panel">
-            <h2 data-i18n="config_menu">System Config</h2>
-            <p class="meta">시트의 lead_status 컬럼이 어떤 값일 때 어느 단계로 매핑할지 정의합니다.</p>
+            <div class="panel-header">
+              <h3><i data-lucide="link-2"></i> <span data-i18n="panel_status_mapping">단계 ⇄ 시트 상태값 매핑</span></h3>
+            </div>
             <form id="config-form">
-              <label>행사 선택
+              <label><span data-i18n="form_event_select">행사 선택</span>
                 <select id="config-event-select"></select>
               </label>
-              <div class="form-row">
-                <label>created 상태값
-                  <input id="cfg-created-status" placeholder="CREATED" />
+
+              <div class="status-map-grid">
+                <label>
+                  <span class="stage-tag s-new_lead"><i data-lucide="circle-dot"></i> <span data-i18n="stage_new_lead">신규 리드</span></span>
+                  <input id="cfg-status-new_lead" placeholder="CREATED" />
+                  <small data-i18n="form_cfg_initial_hint">최초 인입 인식값 (기본 CREATED)</small>
                 </label>
-                <label>consulting 상태값 <small>(쉼표 구분)</small>
+                <label>
+                  <span class="stage-tag s-auto_replied"><i data-lucide="check-circle"></i> <span data-i18n="stage_auto_replied">자동응답 완료</span></span>
+                  <input id="cfg-status-auto_replied" placeholder="AUTOANSWER" />
+                  <small data-i18n="form_cfg_auto_hint">자동응답 후 시트에 기록</small>
+                </label>
+                <label>
+                  <span class="stage-tag s-consulting"><i data-lucide="messages-square"></i> <span data-i18n="stage_consulting">상담 진행중</span></span>
+                  <input id="cfg-status-consulting" placeholder="ANSWER" />
+                  <small data-i18n="form_cfg_answer_hint">FAQ 응답 발송 후</small>
+                </label>
+                <label>
+                  <span class="stage-tag s-booking_push"><i data-lucide="calendar-clock"></i> <span data-i18n="stage_booking_push">예약 유도</span></span>
+                  <input id="cfg-status-booking_push" placeholder="ANSWER" />
+                  <small data-i18n="form_cfg_booking_hint">예약 푸시 단계</small>
+                </label>
+                <label>
+                  <span class="stage-tag s-booked"><i data-lucide="calendar-check"></i> <span data-i18n="stage_booked">예약 완료</span></span>
+                  <input id="cfg-status-booked" placeholder="END" />
+                  <small data-i18n="form_cfg_end_hint">상담 종료/예약 확정</small>
+                </label>
+                <label>
+                  <span class="stage-tag s-no_response"><i data-lucide="clock-alert"></i> <span data-i18n="stage_no_response">미응답</span></span>
+                  <input id="cfg-status-no_response" placeholder="NO_RESPONSE" />
+                  <small data-i18n="form_cfg_noresp_hint">응답 없음</small>
+                </label>
+                <label>
+                  <span class="stage-tag s-recontact_needed"><i data-lucide="repeat"></i> <span data-i18n="stage_recontact_needed">재접촉 필요</span></span>
+                  <input id="cfg-status-recontact_needed" placeholder="RECONTACT" />
+                  <small data-i18n="form_cfg_recontact_hint">재접촉 대기</small>
+                </label>
+              </div>
+
+              <hr style="border:none; border-top:1px solid var(--line); margin:8px 0;" />
+
+              <div class="form-row">
+                <label><span data-i18n="form_cfg_consulting_alts">consulting 추가 인식값</span> <small data-i18n="form_cfg_consulting_hint">쉼표 구분, 시트의 기존 값들</small>
                   <input id="cfg-consulting-values" placeholder="IN_PROGRESS,상담 중" />
                 </label>
-                <label>전화번호 prefix 제거
+                <label><span data-i18n="form_cfg_phone_prefix">전화번호 prefix 제거</span>
                   <input id="cfg-phone-prefix" placeholder="p:" />
                 </label>
               </div>
-              <button type="submit" data-i18n="save_config">Config 저장</button>
+
+              <div class="actions">
+                <button type="submit">
+                  <i data-lucide="save"></i><span data-i18n="btn_save_config">설정 저장</span>
+                </button>
+              </div>
             </form>
           </section>
         </section>
@@ -265,14 +433,14 @@
             </div>
             <p class="lead-meta"></p>
           </div>
-          <select class="stage-select">
-            <option value="new_lead">신규 리드</option>
-            <option value="auto_replied">자동응답 완료</option>
-            <option value="consulting">상담 진행중</option>
-            <option value="booking_push">예약 유도</option>
-            <option value="booked">예약 완료</option>
-            <option value="no_response">미응답</option>
-            <option value="recontact_needed">재접촉 필요</option>
+          <select class="stage-select" aria-label="단계 변경">
+            <option value="new_lead" data-i18n="stage_new_lead">신규 리드</option>
+            <option value="auto_replied" data-i18n="stage_auto_replied">자동응답 완료</option>
+            <option value="consulting" data-i18n="stage_consulting">상담 진행중</option>
+            <option value="booking_push" data-i18n="stage_booking_push">예약 유도</option>
+            <option value="booked" data-i18n="stage_booked">예약 완료</option>
+            <option value="no_response" data-i18n="stage_no_response">미응답</option>
+            <option value="recontact_needed" data-i18n="stage_recontact_needed">재접촉 필요</option>
           </select>
         </div>
         <div class="faq-buttons"></div>
@@ -280,6 +448,7 @@
       </article>
     </template>
 
+    <script src="https://unpkg.com/lucide@latest"></script>
     <script src="app.js"></script>
   </body>
 </html>
