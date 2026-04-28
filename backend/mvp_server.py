@@ -51,7 +51,7 @@ def extract_sheet_id(sheet_url: str) -> str:
 def fetch_sheet_rows(sheet_id: str, api_key: str, sheet_name: str = "") -> list[dict]:
     """Fetch all rows from a Google Sheet and return as list of dicts."""
     range_param = f"{sheet_name}!A:Z" if sheet_name else "A:Z"
-    url = f"{SHEETS_API_BASE}/{sheet_id}/values/{quote(range_param)}?key={api_key}"
+    url = f"{SHEETS_API_BASE}/{sheet_id}/values/{quote(range_param, safe='!:')}?key={api_key}"
     req = Request(url)
     with urlopen(req, timeout=10) as resp:  # nosec B310
         data = json.loads(resp.read().decode("utf-8"))
